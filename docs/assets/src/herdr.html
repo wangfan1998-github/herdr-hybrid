@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<script>document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') || 'light';</script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{width:1500px;height:480px}
+  .wrap{padding:46px 64px 0}
+  h1{font-size:28px}
+  .term{margin-top:26px;height:320px;display:grid;grid-template-rows:34px 1fr}
+  .term .bar{grid-column:1/-1}
+  .split{display:grid;grid-template-columns:340px 1fr;min-height:0}
+  .side{border-right:1px solid var(--term-line);padding:14px 12px;font-size:13px;line-height:21px}
+  .tab{display:flex;justify-content:space-between;padding:4px 10px;border-radius:7px;color:var(--term-muted)}
+  .tab.on{background:rgba(255,255,255,.07);color:var(--term-text)}
+  .tab .st{font-size:12px}
+  .side .hint{margin-top:18px;padding:0 10px;color:var(--term-muted);font-size:12px;line-height:20px}
+  .main pre{padding:14px 22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>herdr 工作区就是看板</h1>
+  <div class="sub">tab 1 是 Leader；每派一个 worker 就多一个 --no-focus 的 tab，transcript 实时滚动；做完由 Leader 收回。状态从不经过窗口。</div>
+
+  <div class="term">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="title">herdr · workspace w1</div></div>
+    <div class="split">
+      <div class="side">
+        <div class="tab on"><span>w1:t1  Leader · hh claude</span></div>
+        <div class="tab"><span>w1:t12 hh:export-be</span><span class="st t-u">● running</span></div>
+        <div class="tab"><span>w1:t13 hh:export-fe</span><span class="st t-u">● running</span></div>
+        <div class="tab"><span>w1:t14 hh:export-review</span><span class="st t-g">✓ done</span></div>
+        <div class="tab"><span>w1:t9  hh:db-migrate</span><span class="st">closed</span></div>
+        <div class="hint">hh close export-review<br>hh view db-migrate</div>
+      </div>
+      <div class="main">
+<pre><span class="t-d"># hh run 20260902-141003-export-be-a1f2 · coder → fast @ relay · full · ~/repo/be</span>
+<span class="t-d">$ claude -p --output-format stream-json --verbose --permission-mode bypassPermissions</span>
+<span class="t-d">  · init model=vendor/coding-fast mode=bypassPermissions</span>
+<span class="t-w">⏺ 先看现有的 handler 和路由约定</span>
+<span class="t-d">  ⚙ Read internal/order/handler.go</span>
+<span class="t-d">  ⚙ Bash go test ./internal/order/...</span>
+<span class="t-w">⏺ /export 接口已实现：流式写 CSV，10 万行不进内存；go test ./... 通过</span>
+<span class="t-d">  ⚙ Bash git add internal/order/export.go internal/order/export_test.go</span>
+<span class="t-d">  ⚙ Bash git commit -m "order: add /export CSV endpoint"</span>
+<span class="t-t">  ■ success</span>
+<span class="t-d"># done · exit 0 · 4m21s  →  result.json 已写，Leader 正在 hh result / go test 验收</span></pre>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

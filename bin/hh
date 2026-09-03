@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+'use strict';
+// hh — herdr-hybrid CLI：聪明模型当 Leader，指挥其它订阅模型（官方 CLI 无头进程）干活。
+require('../lib/cli').main(process.argv.slice(2));

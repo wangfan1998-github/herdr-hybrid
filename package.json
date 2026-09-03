@@ -1,0 +1,14 @@
+{
+  "name": "herdr-hybrid",
+  "version": "1.0.0",
+  "description": "让最聪明的模型当 Leader，便宜的模型干活：Claude Code 混动编排。网关/key/模型一份配置，Leader 拆解、验收、review，worker 并行无头实现，每个 worker 在 herdr 里一个窗口。Hybrid orchestration for Claude Code on herdr.",
+  "license": "MIT",
+  "repository": "github:wangfan1998-github/herdr-hybrid",
+  "bin": { "hh": "bin/hh" },
+  "engines": { "node": ">=18" },
+  "files": ["bin", "lib", "prompts", "skill", "install.sh", "README.md", "docs"],
+  "scripts": {
+    "check": "for f in bin/hh lib/*.js tests/fake-agent; do node --check \"$f\" || exit 1; done",
+    "test": "bash tests/smoke.sh"
+  }
+}

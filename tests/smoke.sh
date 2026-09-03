@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# 不依赖真实 claude 的冒烟测试：tests/fake-agent 假扮 claude（profile 的 bin 指向它）。
+# 覆盖：init（导入 ccm conf + shell alias）/ gateways / profiles / env 注入与继承清理 / roles / dispatch / wait / result / read / task /
+#       send(resume) / cancel / failed / crashed / 超时退出码 / dry-run argv / aliases / doctor / log / status / MCP / 错误提示
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export PATH="$here/bin:$PATH"
+T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
+export HH_CONFIG_DIR="$T/cfg" HH_STATE_DIR="$T/state" HH_CCM_DIR="$T/ccm" HH_ALIAS_FILES="$T/aliases"
+pass(){ echo "PASS $*"; }; fail(){ echo "FAIL $*"; exit 1; }
+has(){ [[ "$1" == *"$2"* ]]; }
+jget(){ node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const o=JSON.parse(d);const v=process.argv[1].split(".").reduce((a,k)=>a==null?a:a[k],o);console.log(v==null?"":typeof v==="object"?JSON.stringify(v):v)})' "$1"; }
+FAKE="$here/tests/fake-agent"
+
+# ---- 准备旧 ccm 配置 + shell alias，让 init 导入 ----
+mkdir -p "$T/ccm"
+cat > "$T/ccm/gateways.conf" <<'EOF'
+# name   url   auth   secret   extra
+gwa   https://a.example.com   token    sk-aaaa1234567890   ENABLE_TOOL_SEARCH=false
+gwh   https://h.example.com/#x   apikey   ab#cd1234567890   FOO=gw
+EOF
+cat > "$T/ccm/profiles.conf" <<'EOF'
+# name  gateway  model  extra
+pa      gwa   model-a
+ph      gwh   model#1   FOO=profile
+bad     nope  m
+EOF
+cat > "$T/ccm/roles.conf" <<'EOF'
+coder      pa       coder.md
+reviewer   claude   reviewer.md
+EOF
+cat > "$T/aliases" <<'EOF'
+alias democc="CLAUDE_CODE_NO_FLICKER=1 ANTHROPIC_BASE_URL=https://demo.example.com ANTHROPIC_AUTH_TOKEN=sk-demo1234567890 ANTHROPIC_MODEL=demo-model ENABLE_TOOL_SEARCH=false claude"
+alias demo2cc="ANTHROPIC_BASE_URL=https://demo.example.com ANTHROPIC_AUTH_TOKEN=sk-demo1234567890 ANTHROPIC_MODEL=demo-model-2 claude --foo"
+alias cc="claude --dangerously-skip-permissions"
+EOF
+
+out="$(hh init --json)"; has "$out" '"config"' && pass "hh init" || fail "init: $out"
+[ -f "$HH_CONFIG_DIR/config.json" ] && pass "config.json 生成" || fail "config.json"
+mode(){ node -e 'console.log((require("fs").statSync(process.argv[1]).mode & 0o777).toString(8))' "$1"; }   # 跨 BSD/GNU 的权限读取
+[ "$(mode "$HH_CONFIG_DIR/config.json")" = "600" ] && pass "config.json 600" || fail "perm: $(mode "$HH_CONFIG_DIR/config.json")"
+[ -f "$HH_CONFIG_DIR/prompts/coder.md" ] && pass "prompts 复制" || fail "prompts"
+has "$out" '"gwa"' && has "$out" '"gwh"' && pass "init 导入 ccm 网关" || fail "ccm gateways: $out"
+has "$out" '"pa"' && has "$out" '"ph"' && pass "init 导入 ccm profile" || fail "ccm profiles: $out"
+has "$out" 'profile bad 引用的网关不存在' && pass "坏 profile 被跳过并报告" || fail "skip bad: $out"
+[ "$(jget roles.coder.profile <<<"$out")" = "pa" ] && [ "$(jget roles.reviewer.profile <<<"$out")" = "official" ] && pass "init 导入 ccm 角色（claude→official）" || fail "ccm roles: $out"
+has "$out" '"demo"' && has "$out" '"demo2"' && pass "init 导入 shell alias（去掉 cc 后缀）" || fail "aliases: $out"
+gw="$(hh profiles show demo2 | jget profile.gateway)"; [ "$gw" = "$(hh profiles show demo | jget profile.gateway)" ] && pass "同 url+密钥的 alias 复用网关 ($gw)" || fail "alias gateway reuse"
+
+# ---- env 注入 ----
+out="$(hh env ph --reveal)"; has "$out" '"ANTHROPIC_API_KEY": "ab#cd1234567890"' && pass "值含 # 不被截断 / apikey 注入" || fail "env ph: $out"
+has "$out" '"FOO": "profile"' && pass "profile env 覆盖 gateway env" || fail "override: $out"
+has "$out" '"ANTHROPIC_MODEL": "model#1"' && has "$out" '"CLAUDE_CODE_SUBAGENT_MODEL": "model#1"' && pass "模型写入全部 model 变量" || fail "model env: $out"
+out="$(hh env ph)"; has "$out" '"ANTHROPIC_API_KEY": "ab#c***90"' && pass "默认打码" || fail "mask: $out"
+out="$(hh env official)"; has "$out" '"ANTHROPIC_BASE_URL"' && ! has "$out" '"ANTHROPIC_BASE_URL":' && pass "official 会清掉继承的网关变量" || fail "official unset: $out"
+out="$(hh env pa -m other)"; has "$out" '"ANTHROPIC_MODEL": "other"' && pass "env -m 覆盖模型" || fail "env -m: $out"
+
+# ---- gateways / profiles 增删改与引用保护 ----
+out="$(hh gateways set gw2 --url https://g2.example.com --auth apikey --secret sk-two --env ENABLE_TOOL_SEARCH=false --json)"; has "$out" '"gw2"' && pass "gateways set" || fail "gw set: $out"
+out="$(hh gateways set gwbad --url notaurl --secret x 2>&1 || true)"; has "$out" 'http(s)' && pass "gateways set 校验 url" || fail "gw url: $out"
+out="$(hh profiles set p2 --gateway gw2 --model model-two --env K=V --json)"; has "$out" '"model": "model-two"' && pass "profiles set" || fail "p set: $out"
+out="$(hh profiles set px --gateway nope --model m 2>&1 || true)"; has "$out" '网关不存在' && pass "profiles set 未知网关拒绝" || fail "p nope: $out"
+out="$(hh gateways rm gw2 2>&1 || true)"; has "$out" '仍被 profile 引用' && pass "gateways rm 被引用拒绝" || fail "gw rm: $out"
+out="$(hh profiles rm p2 --json)"; has "$out" '"removed": "p2"' && pass "profiles rm" || fail "p rm: $out"
+out="$(hh gateways rm gw2 --json)"; has "$out" '"removed": "gw2"' && pass "gateways rm" || fail "gw rm2: $out"
+out="$(hh profiles rm official 2>&1 || true)"; has "$out" '内置' && pass "official 不可删" || fail "rm official: $out"
+out="$(hh profiles aliases)"; has "$out" "alias pacc='" && has "$out" "claude pa'" && pass "profiles aliases" || fail "aliases: $out"
+out="$(hh roles --plain)"; has "$out" 'coder' && has "$out" 'pa' && pass "hh roles 表格" || fail "roles table: $out"
+out="$(hh leader ph --json)"; has "$out" '"leader": "ph"' && pass "hh leader 设置" || fail "leader: $out"
+
+# ---- 假 claude：profile 的 bin 指向 fake-agent ----
+hh profiles set fake --gateway gwh --model fake-model --bin "$FAKE" --env FOO=fake >/dev/null
+hh roles set coder --profile fake >/dev/null
+hh profiles set official --bin "$FAKE" >/dev/null
+out="$(hh dispatch -r coder -l t1 -d "$T" -t "say pong please" --view none)"; id="$(jget run.id <<<"$out")"; [ -n "$id" ] && pass "dispatch → $id" || fail "dispatch: $out"
+grep -q '角色规范' "$HH_STATE_DIR/runs/$id/task.md" && grep -q '完成要求' "$HH_STATE_DIR/runs/$id/task.md" && pass "task.md 含角色模板与完成要求" || fail "task.md"
+out="$(hh wait "$id" --timeout 30)"; [ "$(jget settled <<<"$out")" = "true" ] && pass "wait settled" || fail "wait: $out"
+out="$(hh result "$id")"; [ "$(jget run.status <<<"$out")" = "done" ] && [ "$(jget run.final <<<"$out")" = "pong" ] && pass "result done, final=pong" || fail "result: $out"
+sid="$(jget run.session_id <<<"$out")"; [ -n "$sid" ] && pass "session_id=$sid" || fail "session_id"
+[ "$(jget run.gateway <<<"$out")" = "gwh" ] && [ "$(jget run.model <<<"$out")" = "fake-model" ] && pass "run 记录 gateway/model" || fail "run meta: $out"
+out="$(hh read "$id" --plain)"; has "$out" '⏺ pong' && has "$out" '⚙ Read' && has "$out" 'mode=bypassPermissions' && pass "read transcript（含 autonomy 参数）" || fail "read: $out"
+out="$(hh task "$id" --plain)"; has "$out" 'say pong please' && pass "task 回溯" || fail "task: $out"
+
+# ---- env 真正到达子进程 + official 清理继承 ----
+out="$(hh dispatch -r coder -l envck -d "$T" -t "envcheck" --view none)"; id_e="$(jget run.id <<<"$out")"; hh wait "$id_e" --timeout 30 >/dev/null
+fin="$(hh result "$id_e" | jget run.final)"; [ "$fin" = "env=https://h.example.com/#x/fake-model/-/fake" ] && pass "子进程收到 BASE_URL/MODEL/profile env（apikey 网关不设 AUTH_TOKEN）" || fail "envcheck: $fin"
+out="$(ANTHROPIC_BASE_URL=https://leader.example.com ANTHROPIC_AUTH_TOKEN=leader-token ANTHROPIC_MODEL=leader-model hh dispatch -p official -l offck -d "$T" -t "envcheck" --view none)"; id_o="$(jget run.id <<<"$out")"; hh wait "$id_o" --timeout 30 >/dev/null
+fin="$(hh result "$id_o" | jget run.final)"; [ "$fin" = "env=-/-/-/-" ] && pass "official worker 不继承 Leader 的网关变量" || fail "official inherit: $fin"
+out="$(hh dispatch -r coder -p pa -l override -d "$T" -t "envcheck" --view none 2>&1 || true)"; has "$out" '找不到可执行文件' || has "$out" '"id"' && pass "-r 与 -p 同时给：-p 优先（pa 无 fake bin）" || fail "override: $out"
+
+# ---- worker 汇报契约：末尾 json 块 → result.report ----
+grep -q '"status":"done|partial|blocked"' "$HH_STATE_DIR/runs/$id/task.md" && pass "task.md 页脚含 report schema" || fail "footer schema"
+out="$(hh dispatch -r coder -l rep -d "$T" -t "please report" --view none)"; id_r="$(jget run.id <<<"$out")"; hh wait "$id_r" --timeout 30 >/dev/null
+out="$(hh result "$id_r")"; [ "$(jget run.report.status <<<"$out")" = "done" ] && has "$(jget run.report.changed <<<"$out")" 'a.txt' && pass "result.report 解析" || fail "report: $out"
+[ "$(hh result "$id" | jget run.report)" = "" ] && pass "没有 json 块时 report 为空" || fail "report null"
+out="$(hh roles --plain)"; has "$out" 'DESC' && has "$out" '实现明确边界' && pass "角色带用途描述（导入时补默认）" || fail "desc: $out"
+out="$(hh roles set tester --profile fake --desc '跑测试并报告' --json)"; has "$out" '"desc": "跑测试并报告"' && pass "roles set --desc" || fail "roles desc: $out"
+out="$(hh claude --dry-run)"; has "$out" 'tester' && has "$out" '跑测试并报告' && has "$out" 'fake-model' && has "$out" 'result.report' && pass "Leader prompt 注入实时角色表 / profile / 汇报契约" || fail "roster: $out"
+hh roles rm tester >/dev/null
+
+# ---- send = 恢复同一会话 ----
+out="$(hh send "$id" -t "one more thing" --view none)"; id2="$(jget run.id <<<"$out")"; [ "$(jget run.parent <<<"$out")" = "$id" ] && pass "send → $id2 (parent ok)" || fail "send: $out"
+hh wait "$id2" --timeout 30 >/dev/null
+out="$(hh result "$id2")"; has "$(jget run.final <<<"$out")" "resumed $sid" && pass "send 恢复了同一 session" || fail "send resume: $out"
+
+# ---- cancel / failed / crashed / 超时 ----
+out="$(FAKE_SLEEP=60 hh dispatch -r coder -l slow -d "$T" -t "sleep" --view none)"; id3="$(jget run.id <<<"$out")"
+sleep 1; out="$(hh status)"; has "$out" "\"$id3\"" && has "$out" '"running"' && pass "status 显示 running" || fail "status running: $out"
+out="$(hh cancel "$id3")"; [ "$(jget run.status <<<"$out")" = "cancelled" ] && pass "cancel" || fail "cancel: $out"
+out="$(FAKE_FAIL=1 hh dispatch -r coder -l boom -d "$T" -t "fail" --view none)"; id4="$(jget run.id <<<"$out")"; hh wait "$id4" --timeout 30 >/dev/null
+out="$(hh result "$id4")"; [ "$(jget run.status <<<"$out")" = "failed" ] && has "$(jget run.error <<<"$out")" 'error_during_execution' && pass "failed + error 记录" || fail "fail: $out"
+mkdir -p "$HH_STATE_DIR/runs/20200101-000000-ghost-0000"
+printf '{"id":"20200101-000000-ghost-0000","label":"ghost","profile":"fake","cwd":"%s","created":"2020-01-01T00:00:00.000Z","status":"running","worker_pid":999999}\n' "$T" > "$HH_STATE_DIR/runs/20200101-000000-ghost-0000/meta.json"
+out="$(hh wait ghost --timeout 5)"; [ "$(jget settled <<<"$out")" = "true" ] && has "$out" '"crashed"' && pass "死 worker → crashed（不空转）" || fail "crashed: $out"
+out="$(FAKE_SLEEP=20 hh dispatch -r coder -l slow2 -d "$T" -t "sleep" --view none)"; id5="$(jget run.id <<<"$out")"
+set +e; hh wait "$id5" --timeout 2 >/dev/null; rc=$?; set -e; [ $rc -eq 2 ] && pass "wait 超时退出码 2" || fail "wait rc=$rc"
+hh cancel "$id5" >/dev/null
+
+# ---- dry-run argv ----
+out="$(hh dispatch --dry-run -p pa -d "$T" -t x)"; has "$out" '"-p"' && has "$out" 'bypassPermissions' && has "$out" '"model-a"' && has "$out" '"ANTHROPIC_AUTH_TOKEN": "sk-a***90"' && pass "dry-run argv + env 打码" || fail "dry: $out"
+out="$(hh dispatch --dry-run -p pa -a readonly -d "$T" -t x)"; has "$out" '"default"' && has "$out" 'git diff' && pass "readonly 映射" || fail "dry ro: $out"
+out="$(hh dispatch --dry-run -p pa -a workspace -d "$T" -t x)"; has "$out" 'acceptEdits' && pass "workspace 映射" || fail "dry ws: $out"
+
+# ---- 引用保护 / 删除 ----
+out="$(hh profiles rm fake 2>&1 || true)"; has "$out" '仍被角色引用' && pass "profiles rm 被引用拒绝" || fail "rm referenced: $out"
+out="$(hh roles rm reviewer --json)"; has "$out" '"removed": "reviewer"' && pass "roles rm" || fail "roles rm: $out"
+out="$(hh profiles import-aliases --dry-run "$T/aliases")"; has "$out" '"dry_run": true' && pass "import-aliases --dry-run" || fail "import dry: $out"
+out="$(hh profiles import-ccm --dry-run "$T/ccm")"; has "$out" '"exists"' && pass "import-ccm 幂等（已存在跳过）" || fail "import ccm: $out"
+
+# ---- doctor / log / status --all ----
+out="$(hh doctor --json || true)"; has "$out" '"checks"' && has "$out" '"gateway.gwh"' && pass "doctor --json" || fail "doctor: $out"
+out="$(hh log)"; has "$out" '"dispatch"' && has "$out" '"cancel"' && pass "log 事件流" || fail "log: $out"
+out="$(hh status --all)"; has "$out" "\"$id\"" && has "$out" "\"$id4\"" && pass "status --all" || fail "status all: $out"
+
+# ---- MCP ----
+req='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"0"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"hh_profiles","arguments":{}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"hh_result","arguments":{"id":"'"$id"'"}}}
+{"jsonrpc":"2.0","id":5,"method":"nope"}'
+out="$(printf '%s\n' "$req" | hh mcp)"
+has "$out" '"serverInfo"' && pass "mcp initialize" || fail "mcp init: $out"
+has "$out" '"hh_dispatch"' && has "$out" '"hh_send"' && pass "mcp tools/list" || fail "mcp list: $out"
+has "$out" 'gwh' && ! has "$out" 'ab#cd1234567890' && pass "mcp hh_profiles（密钥不外泄）" || fail "mcp profiles: $out"
+has "$out" 'pong' && pass "mcp hh_result" || fail "mcp result: $out"
+has "$out" '"code":-32601' && pass "mcp 未知方法报错" || fail "mcp err: $out"
+
+# ---- 错误提示 ----
+out="$(hh dispatch --bogus 2>&1 || true)"; has "$out" '未知参数' && pass "未知参数报错" || fail "bogus: $out"
+out="$(HH_CONFIG_DIR=$T/none hh roles 2>&1 || true)"; has "$out" 'hh init' && pass "无配置提示 hh init" || fail "no config: $out"
+out="$(hh claude --help 2>&1)"; has "$out" '用法' && pass "hh claude --help 给用法" || fail "claude usage: $out"
+out="$(hh claude --version 2>&1 || true)"; has "$out" 'Leader 模式' && has "$out" 'profile ph' && pass "hh claude 不带 profile = leader 模式" || fail "claude leader: $out"   # CI 没有 claude，只断言头部
+out="$(hh claude --dry-run)"; has "$out" '"leader": true' && has "$out" '--append-system-prompt' && has "$out" 'herdr-hybrid Leader 模式' && has "$out" '先三问' && pass "Leader 模式注入协议（原则，不是对照表）" || fail "leader dry: $out"
+out="$(hh claude --dry-run pa --foo)"; has "$out" '"leader": false' && ! has "$out" 'append-system-prompt' && has "$out" '"--foo"' && has "$out" 'sk-a***90' && pass "普通模式不注入协议、参数透传、env 打码" || fail "plain dry: $out"
+out="$(hh claude --leader pa --dry-run)"; has "$out" '"leader": true' && has "$out" '"profile": "pa"' && pass "--leader 指定 profile" || fail "leader pa: $out"
+out="$(hh claude --dry-run --plain)"; has "$out" 'Leader 模式 · profile ph' && ! has "$out" '--plain' && pass "dry-run 的 --plain 不透传给 claude" || fail "plain passthrough: $out"
+echo "ALL PASS"

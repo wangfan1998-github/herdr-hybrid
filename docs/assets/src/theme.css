@@ -1,0 +1,34 @@
+/* 四张图共用的设计变量：一种强调色 + 暖灰中性色，浅/深两套 */
+:root[data-theme="light"]{
+  --bg:#faf9f5; --surface:#ffffff; --line:#e6e1d6; --line-strong:#d3cdbf;
+  --ink:#141413; --ink-2:#3d3d3a; --muted:#6c6a64; --chip:#efe9de;
+  --accent:#cc785c; --green:#3f9d5a; --amber:#c98a2e; --teal:#3a9a8c;
+  --term:#181715; --term-line:#2b2926; --term-text:#ece7dc; --term-muted:#9d9a92; --term-bar:#23211e;
+}
+:root[data-theme="dark"]{
+  --bg:#0d0d0c; --surface:#151413; --line:#262421; --line-strong:#3a3733;
+  --ink:#ece7dc; --ink-2:#cfcac0; --muted:#8f8b82; --chip:#221f1c;
+  --accent:#e08a66; --green:#6cc07a; --amber:#e8a55a; --teal:#5db8a6;
+  --term:#151413; --term-line:#2a2825; --term-text:#ece7dc; --term-muted:#8f8b82; --term-bar:#1d1b19;
+}
+:root{
+  --serif:"Songti SC","Tiempos Headline",Georgia,"Times New Roman",serif;
+  --sans:"PingFang SC","Helvetica Neue",Helvetica,"Hiragino Sans GB",Arial,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden;position:relative}
+h1{margin:0;font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15}
+.sub{color:var(--muted);font-size:15px;line-height:1.6;margin-top:10px}
+.chip{display:inline-block;padding:4px 11px;border-radius:999px;background:var(--chip);color:var(--ink-2);font-size:12.5px;font-weight:500;line-height:1.4;white-space:nowrap}
+.chip.accent{background:var(--accent);color:#fff}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.accent{color:var(--accent)}
+/* 终端窗口 */
+.term{background:var(--term);border:1px solid var(--term-line);border-radius:14px;overflow:hidden;color:var(--term-text);font-family:var(--mono);font-size:13px;line-height:21px}
+.term .bar{height:34px;background:var(--term-bar);border-bottom:1px solid var(--term-line);display:flex;align-items:center;padding:0 14px;position:relative}
+.term .dots{display:flex;gap:7px}.term .dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.12)}
+.term .title{position:absolute;left:0;right:0;text-align:center;color:var(--term-muted);font-size:12px}
+.term pre{margin:0;padding:14px 22px;white-space:pre;font:inherit}
+.t-p{color:var(--accent)}.t-u{color:var(--amber)}.t-g{color:var(--green)}.t-t{color:var(--teal)}.t-d{color:var(--term-muted)}.t-w{color:var(--term-text)}.t-b{color:var(--term-text);font-weight:600}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;background:#0d0d0c}
+  body{width:1200px;height:560px;font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:14.5px;line-height:22px}
+  .win{position:absolute;left:24px;top:21px;width:1152px;height:518px;background:#151413;border:1px solid #2a2825;box-sizing:border-box;border-radius:16px;overflow:hidden}
+  .bar{height:34px;background:#252320;display:flex;align-items:center;padding-left:14px;gap:8px}
+  .dot{width:10px;height:10px;border-radius:50%;background:#3d3a36}
+  .title{position:absolute;left:0;right:0;top:9px;text-align:center;color:#c9c5bb;font-size:12px}
+  .body{padding:22px 24px;color:#c9c5bb;white-space:pre;height:440px;overflow:hidden;box-sizing:content-box}
+  .p{color:#cc785c}.w{color:#faf9f5}.u{color:#e8a55a}.g{color:#5db872}.t{color:#5db8a6}.d{color:#8f8b82}.h{color:#faf9f5;font-weight:600}
+  .blk{display:none}.blk.on{display:block}
+  .cursor{display:inline-block;width:8px;height:16px;background:#faf9f5;vertical-align:-3px;margin-left:2px}
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="title">herdr · w1:t1 · Leader (hh claude smart)</div></div>
+  <div class="body">
+<div class="blk" data-n="1"><span class="p">$</span> <span class="w">hh claude</span>
+<span class="d"># hh: Leader 模式（协议已注入）· profile smart</span>
+
+<span class="p">›</span> <span class="w">去完成「订单列表加导出 CSV」，前后端都要，做完让人审一遍</span></div>
+<div class="blk" data-n="2">
+<span class="d">三问 → 改文件；需要并行 + 判断力；验收 go test ./... 与 npm run build</span>
+<span class="d">拆成 2 个子任务：T1 后端 /export（be/）· T2 前端按钮与下载（fe/）</span></div>
+<div class="blk" data-n="3">
+<span class="p">$</span> <span class="w">hh dispatch -r coder -l export-be -d ~/repo/be -f /tmp/t1.md</span>
+{"run":{"id":"20260902-141003-export-be-a1f2","profile":"fast","status":"<span class="u">running</span>"}}
+<span class="p">$</span> <span class="w">hh dispatch -r coder -l export-fe -d ~/repo/fe -f /tmp/t2.md</span>
+{"run":{"id":"20260902-141005-export-fe-7c03","profile":"fast","status":"<span class="u">running</span>"}}
+<span class="d">                                                    ← herdr 里多了两个 tab，transcript 实时滚动</span></div>
+<div class="blk" data-n="4">
+<span class="p">$</span> <span class="w">hh wait export-be export-fe --timeout 540</span>
+[14:10:19] export-be=<span class="u">running</span>  export-fe=<span class="u">running</span></div>
+<div class="blk" data-n="5">[14:13:02] export-be=<span class="g">done</span>     export-fe=<span class="u">running</span>
+[14:14:40] export-be=<span class="g">done</span>     export-fe=<span class="g">done</span>
+<span class="t">ALL_SETTLED (261s)</span></div>
+<div class="blk" data-n="6">
+<span class="p">$</span> <span class="w">hh result export-be</span>
+report {"status":"done","changed":["export.go"],"commits":["3f2a9c1"],"verified":[{"cmd":"go test ./...","ok":true}]}
+<span class="d">Leader 自己复跑：</span><span class="p">$</span> <span class="w">go test ./...</span>   <span class="g">ok</span>  internal/order  0.41s</div>
+<div class="blk" data-n="7">
+<span class="p">$</span> <span class="w">hh dispatch -r reviewer -d ~/repo -t "审查 /tmp/export.diff：接口契约、错误处理、CSV 注入"</span>
+{"run":{"id":"20260902-141520-reviewer-9b1e","profile":"official","autonomy":"readonly","status":"<span class="u">running</span>"}}
+<span class="d">                                                    ← 写的是 fast，审的是另一个模型</span></div>
+<div class="blk" data-n="8">
+<span class="p">$</span> <span class="w">hh result reviewer</span>
+report {"status":"done","summary":"需修改：1 高 2 中","blockers":["高：单元格以 = + - @ 开头未转义（CSV 注入）"]}
+<span class="p">$</span> <span class="w">hh send export-be -t "reviewer 指出 CSV 注入：以 = + - @ 开头的单元格前加 '，补测试后提交"</span>
+{"run":{"id":"20260902-141702-export-be-r1-11c4","parent":"…export-be-a1f2","status":"<span class="u">running</span>"}}   <span class="d">← 同一会话返修</span></div>
+<div class="blk" data-n="9">
+<span class="h">汇报</span>
+子任务      角色/profile        状态   产出                          验收                 review
+export-be   coder/fast          ✓      export.go · 3f2a9c1 → 8d0c4e2   go test ./... 通过   高 1 已修，中 2 已修
+export-fe   coder/fast          ✓      ExportButton.tsx · a71f0d3      npm run build 通过   无问题
+<span class="d">遗留：CSV 编码固定 UTF-8 BOM（假设），大表导出未做分页（建议下个迭代）</span><span class="cursor"></span></div>
+  </div>
+</div>
+<script>
+  const n = Number(new URLSearchParams(location.search).get('n') || 1);
+  document.querySelectorAll('.blk').forEach(b => { if (Number(b.dataset.n) <= n) b.classList.add('on'); });
+  const body = document.querySelector('.body'); // 像真实终端：始终看到最新输出，且按整行对齐
+  const max = body.scrollHeight - body.clientHeight; body.scrollTop = Math.floor(max / 22) * 22;
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Changelog
+
+## 1.0.0 — 2026-09-02
+
+换底座：从「bash alias/ccm + hl 抓屏编排」改成「一份 profile 配置 + `claude -p` 无头 worker + 文件状态」。只支持 Claude Code。
+
+### 新
+- `hh`：单一 CLI（Node ≥ 18，零依赖），stdout 非 TTY 时自动输出 JSON。
+- profile 模型：`gateways`（url + 鉴权 + 密钥 + 公共 env）→ `profiles`（网关 + model + 专属 env/args）→ `roles`（profile + 模板 + 自主级别）。`official` 内置 profile 不注入网关并清掉继承变量。
+- `hh claude <profile>`：交互式启动（替代 `ccm <profile>` / `xxxcc` alias）；`hh profiles aliases` 反向生成 alias。
+- `hh init` 自动导入 `~/.config/ccm/*.conf` 与 shell 里的 `xxxcc` alias；`hh profiles import-aliases / import-ccm` 手动导入，`--dry-run` 预览。
+- run 目录即状态：`task.md / events.jsonl / output.log / result.json`；`done / failed / cancelled / crashed` 由进程与文件决定。
+- `hh send`：`--resume` 恢复同一会话返修。
+- 自主级别 `full / workspace / readonly` → `--permission-mode` 参数；角色可覆盖；模型取值 `-m` > 角色 > profile。
+- `hh mcp` + `hh install-mcp`：hh 成为 Claude Code 的原生 MCP 工具。
+- `hh doctor`：claude / 网关密钥 / profile / 角色 / 技能 / MCP / herdr；`--net` 对角色用到的 profile 真发 pong。
+- 密钥支持 `env:VAR` 引用；所有输出打码。
+- Leader 模式（`hh claude` 不带 profile）：协议 + 实时角色表 / profile 清单注入 system prompt；协议只讲不变量和「三问」，不按措辞分类；角色带 `desc` 用途描述，Leader 按描述选人。
+- worker 汇报契约：回复末尾的 JSON 报告解析进 `result.report`（status / summary / changed / commits / verified / assumptions / blockers）。
+- `tests/smoke.sh` 用 `tests/fake-agent` 假扮 claude 覆盖全链路（66 项，不需要真实 claude）；CI 跑 Node 18/20/22。
+
+### 移除
+- `ccm`（bash）和 `hl`（herdr 抓屏编排）；`gateways.conf / profiles.conf / roles.conf` 改为 `config.json`（自动导入）。
+- 「先问『已完成』再关 tab」：进程退出即完成；验收由 Leader 做。
+
+### 修复（相对 0.2 的设计缺陷）
+- 关闭门禁被上一轮回复 / 「尚未已完成」误判 → 不再有门禁。
+- worker 进程消失后 `wait` 空转到超时 → 立刻 `crashed`。
+- `agent start` 失败被吞 → 启动失败进 `result.json` 的 `error` 和 stderr 尾部。
+- README 声称 `CCM_CLAUDE_ARGS=""` 可关掉跳过权限，实际对派发无效 → 自主级别是显式配置。
+- 所有 profile 都硬塞 `CLAUDE_CODE_EFFORT_LEVEL=max` → 不再默认设置，按 profile `env` 自定。
+- Leader 的网关变量会漏给 official worker → worker 显式清理继承的 `ANTHROPIC_*`。
+- herdr 从硬依赖降为可选观察窗口。
+
+## 0.2.0 — 2026-09-02
+
+初版：ccm + hl + herdr-leader 技能。

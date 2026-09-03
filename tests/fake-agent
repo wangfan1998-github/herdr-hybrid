@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+'use strict';
+// 测试用假 claude：模仿 Claude Code 的无头 stream-json 输出（system/init → assistant → result），接受 claude -p 的参数（只认 --resume）。
+// 任务从 stdin 读。环境: FAKE_SLEEP=秒 (拖时间，测 cancel)  FAKE_FAIL=1 (退出码 1 + is_error)
+// 任务里含 "envcheck" 时，回复里带上 ANTHROPIC_BASE_URL / ANTHROPIC_MODEL / ANTHROPIC_AUTH_TOKEN 的取值，用来验证 profile env 注入。
+const args = process.argv.slice(2);
+const get = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; };
+const resume = get('--resume');
+const session = resume || `fake-${Date.now().toString(36)}`;
+let task = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (c) => { task += c; });
+process.stdin.on('end', async () => {
+  const emit = (o) => process.stdout.write(`${JSON.stringify(o)}\n`);
+  emit({ type: 'system', subtype: 'init', session_id: session, model: get('--model') || 'fake-1', permissionMode: get('--permission-mode') || '?', cwd: process.cwd() });
+  emit({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'task.md' } }] } });
+  const sleep = Number(process.env.FAKE_SLEEP || 0);
+  if (sleep) await new Promise((r) => setTimeout(r, sleep * 1000));
+  const firstLine = (task.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('-')) || '').trim();
+  let final;
+  if (/envcheck/.test(task)) final = `env=${process.env.ANTHROPIC_BASE_URL || '-'}/${process.env.ANTHROPIC_MODEL || '-'}/${process.env.ANTHROPIC_AUTH_TOKEN || '-'}/${process.env.FOO || '-'}`;
+  else if (/pong/i.test(task)) final = 'pong';
+  else if (/report/.test(task)) final = 'done: wrote a.txt\n\n```json\n{"status":"done","summary":"fake report","changed":["a.txt"],"commits":[],"verified":[{"cmd":"true","ok":true}],"assumptions":[],"blockers":[]}\n```';
+  else final = `${resume ? `resumed ${resume}; ` : ''}done: ${firstLine.slice(0, 60)}`;
+  emit({ type: 'assistant', message: { content: [{ type: 'text', text: final }] } });
+  if (process.env.FAKE_FAIL) {
+    emit({ type: 'result', subtype: 'error_during_execution', is_error: true, result: 'boom', session_id: session, num_turns: 1 });
+    process.exit(1);
+  }
+  emit({ type: 'result', subtype: 'success', is_error: false, result: final, session_id: session, num_turns: 1, total_cost_usd: 0, duration_ms: 5 });
+  process.exit(0);
+});

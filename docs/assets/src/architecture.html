@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<script>document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') || 'light';</script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{width:1500px;height:600px}
+  .wrap{padding:48px 64px 0}
+  h1{font-size:30px}
+  .grid{display:grid;grid-template-columns:100px 40px 420px 40px 300px 40px 1fr;align-items:center;margin-top:34px}
+  .you{background:var(--chip);border-radius:14px;padding:22px 0;text-align:center}
+  .you b{display:block;font-size:20px}
+  .you span{display:block;margin-top:6px;font-size:12.5px;color:var(--muted)}
+  .arrow{position:relative;height:2px;background:var(--line-strong);margin:0 10px}
+  .arrow::after{content:"";position:absolute;right:-1px;top:-5px;border:6px solid transparent;border-left:8px solid var(--line-strong);border-right:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 26px 22px}
+  .card .head{display:flex;align-items:center;gap:12px}
+  .card h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .card .who{font-family:var(--mono);font-size:11.5px}
+  .card .lead{margin-top:8px;font-size:13.5px;color:var(--muted)}
+  ol.steps{list-style:none;margin:16px 0 0;padding:0;counter-reset:s}
+  ol.steps li{position:relative;padding-left:32px;font-size:14.5px;line-height:1.45;margin:7px 0;color:var(--ink)}
+  ol.steps li::before{content:counter(s);counter-increment:s;position:absolute;left:0;top:0;width:21px;height:21px;border-radius:50%;background:var(--chip);color:var(--muted);font-family:var(--mono);font-size:11.5px;text-align:center;line-height:21px}
+  ol.steps li em{font-style:normal;color:var(--muted)}
+  .card .foot{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--accent)}
+  /* hh：不用卡片，一条竖向轨道 */
+  .rail{padding:0 6px}
+  .rail h2{margin:0;font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent)}
+  .rail .lead{margin-top:4px;font-size:12.5px;color:var(--muted)}
+  .files{margin:18px 0 0;padding:0;list-style:none;position:relative}
+  .files::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1px;background:var(--line-strong)}
+  .files li{position:relative;padding-left:22px;font-family:var(--mono);font-size:12.5px;line-height:26px;color:var(--ink-2)}
+  .files li::before{content:"";position:absolute;left:2px;top:10px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .files li span{color:var(--muted)}
+  .rail .facts{margin-top:16px;font-size:13px;line-height:1.7;color:var(--muted)}
+  .rail .facts b{color:var(--ink);font-weight:600}
+  /* worker：表格式行，不用卡片 */
+  .workers{border-top:1px solid var(--line)}
+  .row{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row .role{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)}
+  .row .desc{font-size:13px;color:var(--ink)}
+  .row .desc span{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:2px}
+  .row .chip{font-family:var(--mono);font-size:11.5px}
+  .workers .cap{padding:10px 0 0;font-size:12.5px;color:var(--muted)}
+  .note{margin-top:30px;display:flex;align-items:baseline;gap:12px;font-size:13.5px;color:var(--muted)}
+  .note b{color:var(--ink);font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>聪明的 profile 当 Leader，便宜的 profile 当 worker</h1>
+  <div class="sub">一个 profile = 网关 + key + 模型。hh 把它翻译成环境变量：交互式启动给 Leader，无头启动给 worker，结果落成文件。</div>
+
+  <div class="grid">
+    <div class="you"><b>你</b><span>一句话任务</span></div>
+    <div class="arrow"></div>
+
+    <div class="card">
+      <div class="head"><h2>Leader</h2><span class="chip who">smart @ relay</span></div>
+      <div class="lead">你最聪明的 profile，贵的 token 只花在这里</div>
+      <ol class="steps">
+        <li>三问：<em>改变什么 · 什么能力 · 怎么证明做完</em></li>
+        <li>拆成可验收的子任务，写任务文件</li>
+        <li>派发 · 等待 · 读 report</li>
+        <li>自己跑验收，不信自述</li>
+        <li>组织 review · 返修</li>
+        <li>中文汇报：结论 + 证据</li>
+      </ol>
+      <div class="foot">协议注入 system prompt · MCP 工具 hh_*</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="rail">
+      <h2>hh</h2>
+      <div class="lead">Node ≥ 18 · 零依赖 · 给 Agent 的是 JSON</div>
+      <ul class="files">
+        <li>task.md <span>任务全文（含角色规范）</span></li>
+        <li>events.jsonl <span>claude -p 原始事件</span></li>
+        <li>output.log <span>人可读 transcript</span></li>
+        <li>result.json <span>status · report</span></li>
+      </ul>
+      <div class="facts"><b>run 目录即状态</b><br>done / failed / cancelled / crashed<br><b>hh send</b> 恢复同一会话返修<br><b>autonomy</b> full / workspace / readonly</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="workers">
+      <div class="row"><div class="role">coder</div><div class="desc">实现边界内的改动，跑验收，按文件提交<span>fast @ relay · vendor/coding-fast</span></div><span class="chip">full</span></div>
+      <div class="row"><div class="role">executor</div><div class="desc">跑脚本、批处理、环境操作，不改源码<span>fast @ relay</span></div><span class="chip">full</span></div>
+      <div class="row"><div class="role">reviewer</div><div class="desc">只读审 diff，输出分级问题表<span>official · claude 自己的登录</span></div><span class="chip">readonly</span></div>
+      <div class="row"><div class="role">researcher</div><div class="desc">只读调研与方案对比，证据带行号<span>gemini @ gemini-gw · 大上下文</span></div><span class="chip">readonly</span></div>
+      <div class="cap">每个 run 一个 claude -p 无头进程：独立会话、独立工作目录。角色是数据，名字任意，按描述选人。</div>
+    </div>
+  </div>
+
+  <div class="note"><b>herdr（可选）</b><span>每个 worker 一个 --no-focus 的 tab，transcript 实时滚动，Leader 建、Leader 收。状态判定从不经过窗口：关掉 tab 活不丢，没装也一样跑。</span></div>
+</div>
+</body>
+</html>

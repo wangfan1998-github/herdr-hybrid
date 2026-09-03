@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<script>document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') || 'light';</script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{width:1500px;height:420px}
+  .left{position:absolute;left:72px;top:70px;width:690px}
+  .mark{display:flex;align-items:center;gap:16px}
+  .rings{position:relative;width:54px;height:34px}
+  .rings i{position:absolute;top:1px;width:30px;height:30px;border:4px solid var(--accent);border-radius:50%;box-sizing:border-box}
+  .rings i+i{left:22px;border-color:var(--ink)}
+  h1{font-size:66px}
+  .tag{margin-top:24px;font-size:21px;font-weight:600;letter-spacing:-.01em}
+  .desc{margin-top:12px;font-size:16.5px;line-height:1.65;color:var(--muted)}
+  .chips{margin-top:28px;display:flex;gap:10px}
+  .term{position:absolute;right:64px;top:46px;width:636px;height:328px}
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="mark"><div class="rings"><i></i><i></i></div><h1>herdr-hybrid</h1></div>
+    <div class="tag">让最聪明的模型当 Leader，便宜的模型干活</div>
+    <div class="desc">贵的 token 只花在拆解、验收、review；实现交给便宜 profile 的无头进程并行做，写的和审的不是同一个模型。每个 worker 在 herdr 里一个窗口，看得见、收得回。</div>
+    <div class="chips"><span class="chip">Claude Code</span><span class="chip">网关 + key + 模型</span><span class="chip">herdr 可选</span><span class="chip">Node ≥ 18 · 0 deps</span><span class="chip accent">MIT</span></div>
+  </div>
+  <div class="term">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="title">Leader · hh claude smart</div></div>
+<pre><span class="t-p">$</span> <span class="t-b">hh dispatch -r coder -l export-be -d ~/repo/be -f t1.md</span>
+<span class="t-d">{"run":{"id":"…export-be-a1f2","profile":"fast","status":"<span class="t-u">running</span>"}}</span>
+
+<span class="t-p">$</span> <span class="t-b">hh wait export-be export-fe --timeout 540</span>
+<span class="t-d">[14:10:19] export-be=<span class="t-u">running</span>  export-fe=<span class="t-u">running</span></span>
+<span class="t-d">[14:14:40] export-be=<span class="t-g">done</span>     export-fe=<span class="t-g">done</span></span>
+<span class="t-t">ALL_SETTLED (261s)</span>
+
+<span class="t-p">$</span> <span class="t-b">hh result export-be</span>
+<span class="t-d">report {"status":"done","changed":["export.go"],"verified":[…]}</span>
+<span class="t-w">⏺ /export 接口已实现，go test ./... 通过，commit 3f2a9c1</span>
+
+<span class="t-p">$</span> <span class="t-b">hh dispatch -r reviewer -t "审查 export.diff"</span>  <span class="t-d"># 另一个模型来审</span></pre>
+  </div>
+</body>
+</html>
