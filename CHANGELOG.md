@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-面向「手里有多个订阅 / API key、想混用」的人重写上手路径；alias / ccm 导入退为老用户的一键迁移。
+面向「手里有多个订阅 / API key、想混用」的人重写上手路径；shell alias 导入退为老用户的一键迁移。
+
+### 删
+- `hh profiles import-ccm`、`hh init` 对 `~/.config/ccm/*.conf` 的自动导入、`HH_CCM_DIR`。ccm 是这个仓库 0.x 时期自己的 bash 启动器，1.0 起没有人再需要从它迁移；配置早已在 `config.json` 里。
 
 ### 新
 - `hh setup`：一问一答加一个端点 + profile（地址、鉴权、密钥不回显、模型），问它当 Leader 还是干活，顺手真发一次 pong。`hh init` 在 TTY 里没找到任何端点时自动进入（`--no-setup` 关闭）；非 TTY 打印等价命令。
@@ -11,7 +14,7 @@
 
 ### 改
 - worker 的 `error` 摘要过滤 stderr 常驻噪音（`[claude-code:unrecognized_model]`、connectors disabled），并把回复里的 `API Error: …` 放到最前——之前地址写错会被误报成「模型不存在」。
-- README / 帮助文本 / 文档：先解释端点、profile、角色三个词；「三分钟上手」拆成「第一次配置」「已有 alias / ccm 一键迁移」「分工、验证、启动」；写明前提（两个以上端点）、与 Claude Code 自带子代理的区别、默认权限、任务粒度。`xxxcc` / `ccm` 只在迁移段落出现并解释。
+- README / 帮助文本 / 文档：先解释端点、profile、角色三个词；「三分钟上手」拆成「第一次配置」「已有 alias 一键迁移」「分工、验证、启动」；写明前提（两个以上端点）、与 Claude Code 自带子代理的区别、默认权限、任务粒度。`fastcc` 这类 alias 只在迁移段落出现并解释。
 
 ## 1.0.0 — 2026-09-02
 

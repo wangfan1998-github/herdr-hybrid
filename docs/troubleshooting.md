@@ -4,7 +4,7 @@
 
 ## 第一次配置
 
-**`hh doctor` 说「没有端点，只有 official」/ `hh claude` 提醒「只有 official 一个 profile」**：还没加任何订阅 / API key / 网关，所有角色都是 `claude` 自己的登录，能跑但不是混动。`hh setup` 一问一答加一个，或 `hh gateways set` + `hh profiles set`。已经在 shell alias / ccm 里管着 key 的用 `hh profiles import-aliases` / `import-ccm`。
+**`hh doctor` 说「没有端点，只有 official」/ `hh claude` 提醒「只有 official 一个 profile」**：还没加任何订阅 / API key / 网关，所有角色都是 `claude` 自己的登录，能跑但不是混动。`hh setup` 一问一答加一个，或 `hh gateways set` + `hh profiles set`。已经在 shell alias 里管着 key 的用 `hh profiles import-aliases`。
 
 **`hh setup` 的 pong 测试失败**：地址、鉴权方式、密钥三者最常错。`hh read <id>` 看 stderr 尾部；`error` 里的 `API Error: …` 是网关返回的原话。地址不带末尾 `/v1`；`token` 和 `apikey` 换一种再试。
 
@@ -21,8 +21,6 @@
 **`000` / `ENOTFOUND` / 连不上**：域名解析不到。公司内网网关常常只在办公 DNS 里有记录，本机 `dig` 不到就在 `/etc/hosts` 加一行；IP 直连的网关不受影响。
 
 **CLIProxyAPI 一类网关 403 / 被封**：管理接口连续 5 次鉴权失败会按来源 IP 封 30 分钟。不要用错 key 反复 `hh doctor --net --all`；先 `hh profiles test` 单个确认。
-
-**值里有 `#` 被截断**：`config.json` 是 JSON，没有这个问题；导入 ccm conf 时只把「行首 #」和「空白 + #」当注释，值内 `#` 保留。
 
 ## 派发相关
 
@@ -52,7 +50,7 @@
 
 **导入后有大小写重复的 profile**：alias 名大小写不敏感去重；已存在的旧条目保留。`hh profiles rm` 多余的那个。
 
-**`hh init` 说已存在**：`hh init --force` 会在现有配置上再导入一次（不删已有条目）；只想补导入用 `hh profiles import-aliases` / `import-ccm`。
+**`hh init` 说已存在**：`hh init --force` 会在现有配置上再导入一次（不删已有条目）；只想补导入用 `hh profiles import-aliases`。
 
 ## Leader 行为相关
 

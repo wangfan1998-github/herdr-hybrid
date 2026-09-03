@@ -18,7 +18,7 @@
 | --- | --- |
 | 一问一答 | `hh setup`：加一个网关 + profile，顺手指定当 Leader / 干活，并真发一次 pong（`hh init` 没找到网关时自动进入） |
 | 对 Leader 说 | 「加个网关」「加个模型 fast2 走 relay」「让 reviewer 用 smart」「把 xx 删了」 |
-| 命令 | `hh gateways set/rm` · `hh profiles set/rm/test/import-aliases/import-ccm` · `hh roles set/rm` · `hh leader` |
+| 命令 | `hh gateways set/rm` · `hh profiles set/rm/test/import-aliases` · `hh roles set/rm` · `hh leader` |
 | 改文件 | 直接编辑 `config.json` |
 
 ## 顶层字段

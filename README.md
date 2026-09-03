@@ -137,9 +137,9 @@ hh profiles set fast  --gateway relay --model vendor/coding-fast                
 hh profiles set smart --gateway relay --model vendor/reasoning-max                   # 同一端点再加一个模型
 ```
 
-### 已经用 shell alias 或 ccm 管着一批 key：一键迁移
+### 已经用 shell alias 管着一批 key：一键迁移
 
-`hh init` 会自动把它们导进来，不用重配。识别两种来源：形如 `alias fastcc="ANTHROPIC_BASE_URL=… ANTHROPIC_AUTH_TOKEN=… ANTHROPIC_MODEL=… claude"` 的 shell alias（`~/.shell_aliases` `~/.zshrc` `~/.bashrc`），以及旧启动器 ccm 的 `~/.config/ccm/*.conf`。`fastcc` 变成 profile `fast`，同一地址同一密钥的 alias 归成一个端点。之后 `eval "$(hh profiles aliases)"` 能把 `fastcc` 这类快捷命令再生成回来。
+很多人是这样切端点的：`alias fastcc="ANTHROPIC_BASE_URL=… ANTHROPIC_AUTH_TOKEN=… ANTHROPIC_MODEL=… claude"`。`hh init` 会扫 `~/.shell_aliases` `~/.zshrc` `~/.bashrc` 把这类行自动导进来，不用重配：`fastcc` 变成 profile `fast`，同一地址同一密钥的 alias 归成一个端点。之后 `eval "$(hh profiles aliases)"` 能把 `fastcc` 这类快捷命令再生成回来。
 
 ### 分工、验证、启动
 
@@ -273,7 +273,7 @@ run      20260902-172530-e2e-r1-11c4     parent 20260902-172446-e2e-9e5c (resume
 <summary>命令速查</summary>
 
 ```bash
-hh init [--force] [--no-setup]    生成配置；自动导入 shell alias / ccm；没有端点时进入 hh setup
+hh init [--force] [--no-setup]    生成配置；自动导入 claude 启动 alias；没有端点时进入 hh setup
 hh setup                          一问一答加一个端点 + profile，顺手分工、测连通
 hh doctor [--net] [--all]         体检；--net 对角色用到的 profile 真发一次 pong
 hh claude [--leader] [profile]    不带 profile = Leader 模式；带 profile = 用该 profile 启动 Claude Code
@@ -282,24 +282,23 @@ hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LAB
 hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID
 hh send ID -t "TEXT"  ·  hh cancel ID  ·  hh close ID  ·  hh view ID  ·  hh log  ·  hh clean
 hh gateways [set NAME --url U --auth token|apikey --secret S | rm NAME]
-hh profiles [show|set|rm|test NAME | aliases | import-aliases | import-ccm]
+hh profiles [show|set|rm|test NAME | aliases | import-aliases]
 hh roles [set ROLE --profile P [--autonomy A] [--desc "…"] | rm ROLE]  ·  hh leader [PROFILE]
 hh install-mcp  ·  hh mcp
 ```
 </details>
 
 <details>
-<summary>从 shell alias / ccm 迁移</summary>
+<summary>从 shell alias 迁移</summary>
 
-ccm 是 hh 的前身：一个用 `gateways.conf / profiles.conf / roles.conf` 管 profile 的脚本；`xxxcc` 指手写的 shell alias，把网关变量塞在 `claude` 前面（`alias fastcc="ANTHROPIC_BASE_URL=… claude"`）。两者 `hh init` 都会自动导入，也可以随时 `hh profiles import-aliases` / `import-ccm`（`--dry-run` 先看会导什么）。
+`hh init` 自动导入；随时可以 `hh profiles import-aliases [--dry-run] [FILE…]` 再导一次（已存在的不覆盖）。只识别同一行里 `alias NAME=…` 且含 `ANTHROPIC_BASE_URL=` 和 `claude` 的行，多行 alias 和函数手写 `hh profiles set`。
 
 | 以前 | 现在 |
 | --- | --- |
-| `ccm fast` / `fastcc` | `hh claude fast`；`eval "$(hh profiles aliases)"` 生成同名 alias |
-| `ccm list / show / env` | `hh profiles` / `hh profiles show` / `hh env` |
-| `ccm add / add-gateway / rm / test` | `hh profiles set` / `hh gateways set` / `hh profiles rm` / `hh profiles test` |
-| `gateways.conf / profiles.conf / roles.conf` | `config.json`（`hh init` 自动导入） |
-| `hl dispatch` 抓屏 · `hl close` 问「已完成」 | 无头进程 + `result.json`；进程退出即完成，验收由 Leader 做 |
+| `fastcc` | `hh claude fast`；`eval "$(hh profiles aliases)"` 生成同名 alias |
+| `alias` 里的 `ANTHROPIC_MODEL` | profile 的 `model` |
+| `alias` 里其它 `K=V` | profile 的 `env`（与 `commonEnv` 相同的丢掉） |
+| 同一地址同一密钥的多条 alias | 一个端点，多个 profile |
 </details>
 
 <details>

@@ -2,7 +2,7 @@
 # herdr-hybrid 一键安装：
 #   hh → ~/.local/bin/hh（指向 ~/.local/share/herdr-hybrid；HH_DEV=1 则直接指向本仓库）
 #   Leader 技能 → ~/.claude/skills/herdr-leader
-#   配置 → hh init（自动导入 ~/.config/ccm/*.conf 与 shell alias；已有 v2 配置则保留）
+#   配置 → hh init（自动导入 shell 里的 claude 启动 alias；已有 v2 配置则保留）
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN_DIR="${HH_BIN_DIR:-$HOME/.local/bin}"
@@ -47,7 +47,7 @@ if [ -f "$CFG" ]; then
     echo "  旧格式配置已备份到 ${bak}，重新生成"
     "$BIN_DIR/hh" init --force --plain || warn "hh init 失败，稍后手动运行 hh init --force"
   else
-    echo "  保留已有 ${CFG}（要再导入一次 alias / ccm：hh profiles import-aliases / import-ccm）"
+    echo "  保留已有 ${CFG}（要再导入一次 alias：hh profiles import-aliases）"
     "$BIN_DIR/hh" doctor --plain || true
   fi
 else

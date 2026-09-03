@@ -1,34 +1,18 @@
 #!/usr/bin/env bash
 # 不依赖真实 claude 的冒烟测试：tests/fake-agent 假扮 claude（profile 的 bin 指向它）。
-# 覆盖：init（导入 ccm conf + shell alias）/ gateways / profiles / env 注入与继承清理 / roles / dispatch / wait / result / read / task /
+# 覆盖：init（导入 shell alias）/ gateways / profiles / env 注入与继承清理 / roles / dispatch / wait / result / read / task /
 #       send(resume) / cancel / failed / crashed / 超时退出码 / dry-run argv / aliases / doctor / log / status / MCP / 错误提示
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="$here/bin:$PATH"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
-export HH_CONFIG_DIR="$T/cfg" HH_STATE_DIR="$T/state" HH_CCM_DIR="$T/ccm" HH_ALIAS_FILES="$T/aliases"
+export HH_CONFIG_DIR="$T/cfg" HH_STATE_DIR="$T/state" HH_ALIAS_FILES="$T/aliases"
 pass(){ echo "PASS $*"; }; fail(){ echo "FAIL $*"; exit 1; }
 has(){ [[ "$1" == *"$2"* ]]; }
 jget(){ node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const o=JSON.parse(d);const v=process.argv[1].split(".").reduce((a,k)=>a==null?a:a[k],o);console.log(v==null?"":typeof v==="object"?JSON.stringify(v):v)})' "$1"; }
 FAKE="$here/tests/fake-agent"
 
-# ---- 准备旧 ccm 配置 + shell alias，让 init 导入 ----
-mkdir -p "$T/ccm"
-cat > "$T/ccm/gateways.conf" <<'EOF'
-# name   url   auth   secret   extra
-gwa   https://a.example.com   token    sk-aaaa1234567890   ENABLE_TOOL_SEARCH=false
-gwh   https://h.example.com/#x   apikey   ab#cd1234567890   FOO=gw
-EOF
-cat > "$T/ccm/profiles.conf" <<'EOF'
-# name  gateway  model  extra
-pa      gwa   model-a
-ph      gwh   model#1   FOO=profile
-bad     nope  m
-EOF
-cat > "$T/ccm/roles.conf" <<'EOF'
-coder      pa       coder.md
-reviewer   claude   reviewer.md
-EOF
+# ---- 准备 shell alias 让 init 导入；其余端点 / profile 用命令建 ----
 cat > "$T/aliases" <<'EOF'
 alias democc="CLAUDE_CODE_NO_FLICKER=1 ANTHROPIC_BASE_URL=https://demo.example.com ANTHROPIC_AUTH_TOKEN=sk-demo1234567890 ANTHROPIC_MODEL=demo-model ENABLE_TOOL_SEARCH=false claude"
 alias demo2cc="ANTHROPIC_BASE_URL=https://demo.example.com ANTHROPIC_AUTH_TOKEN=sk-demo1234567890 ANTHROPIC_MODEL=demo-model-2 claude --foo"
@@ -40,15 +24,18 @@ out="$(hh init --json)"; has "$out" '"config"' && pass "hh init" || fail "init: 
 mode(){ node -e 'console.log((require("fs").statSync(process.argv[1]).mode & 0o777).toString(8))' "$1"; }   # 跨 BSD/GNU 的权限读取
 [ "$(mode "$HH_CONFIG_DIR/config.json")" = "600" ] && pass "config.json 600" || fail "perm: $(mode "$HH_CONFIG_DIR/config.json")"
 [ -f "$HH_CONFIG_DIR/prompts/coder.md" ] && pass "prompts 复制" || fail "prompts"
-has "$out" '"gwa"' && has "$out" '"gwh"' && pass "init 导入 ccm 网关" || fail "ccm gateways: $out"
-has "$out" '"pa"' && has "$out" '"ph"' && pass "init 导入 ccm profile" || fail "ccm profiles: $out"
-has "$out" 'profile bad 引用的网关不存在' && pass "坏 profile 被跳过并报告" || fail "skip bad: $out"
-[ "$(jget roles.coder.profile <<<"$out")" = "pa" ] && [ "$(jget roles.reviewer.profile <<<"$out")" = "official" ] && pass "init 导入 ccm 角色（claude→official）" || fail "ccm roles: $out"
+[ "$(jget roles.coder.profile <<<"$out")" = "official" ] && [ "$(jget roles_defaulted <<<"$out")" = "true" ] && pass "init 角色默认全 official" || fail "default roles: $out"
 has "$out" '"demo"' && has "$out" '"demo2"' && pass "init 导入 shell alias（去掉 cc 后缀）" || fail "aliases: $out"
 gw="$(hh profiles show demo2 | jget profile.gateway)"; [ "$gw" = "$(hh profiles show demo | jget profile.gateway)" ] && pass "同 url+密钥的 alias 复用网关 ($gw)" || fail "alias gateway reuse"
+hh gateways set gwa --url https://a.example.com --auth token --secret sk-aaaa1234567890 --env ENABLE_TOOL_SEARCH=false >/dev/null
+hh gateways set gwh --url 'https://h.example.com/#x' --auth apikey --secret 'ab#cd1234567890' --env FOO=gw >/dev/null
+hh profiles set pa --gateway gwa --model model-a >/dev/null
+hh profiles set ph --gateway gwh --model 'model#1' --env FOO=profile >/dev/null
+hh roles set coder --profile pa >/dev/null
+[ "$(hh profiles show ph | jget profile.gateway)" = "gwh" ] && pass "命令建好测试用端点 gwa/gwh 与 profile pa/ph" || fail "test fixtures"
 
 # ---- env 注入 ----
-out="$(hh env ph --reveal)"; has "$out" '"ANTHROPIC_API_KEY": "ab#cd1234567890"' && pass "值含 # 不被截断 / apikey 注入" || fail "env ph: $out"
+out="$(hh env ph --reveal)"; has "$out" '"ANTHROPIC_API_KEY": "ab#cd1234567890"' && pass "apikey 注入（值含 # 原样）" || fail "env ph: $out"
 has "$out" '"FOO": "profile"' && pass "profile env 覆盖 gateway env" || fail "override: $out"
 has "$out" '"ANTHROPIC_MODEL": "model#1"' && has "$out" '"CLAUDE_CODE_SUBAGENT_MODEL": "model#1"' && pass "模型写入全部 model 变量" || fail "model env: $out"
 out="$(hh env ph)"; has "$out" '"ANTHROPIC_API_KEY": "ab#c***90"' && pass "默认打码" || fail "mask: $out"
@@ -125,7 +112,6 @@ out="$(hh dispatch --dry-run -p pa -a workspace -d "$T" -t x)"; has "$out" 'acce
 out="$(hh profiles rm fake 2>&1 || true)"; has "$out" '仍被角色引用' && pass "profiles rm 被引用拒绝" || fail "rm referenced: $out"
 out="$(hh roles rm reviewer --json)"; has "$out" '"removed": "reviewer"' && pass "roles rm" || fail "roles rm: $out"
 out="$(hh profiles import-aliases --dry-run "$T/aliases")"; has "$out" '"dry_run": true' && pass "import-aliases --dry-run" || fail "import dry: $out"
-out="$(hh profiles import-ccm --dry-run "$T/ccm")"; has "$out" '"exists"' && pass "import-ccm 幂等（已存在跳过）" || fail "import ccm: $out"
 
 # ---- doctor / log / status --all ----
 out="$(hh doctor --json || true)"; has "$out" '"checks"' && has "$out" '"gateway.gwh"' && pass "doctor --json" || fail "doctor: $out"
@@ -163,7 +149,7 @@ hh leader ph >/dev/null; hh roles set coder --profile fake >/dev/null; hh roles 
 for p in work t-example-com; do hh profiles rm $p >/dev/null; done; for g in w-example-com t-example-com; do hh gateways rm $g >/dev/null; done
 
 # ---- 零端点用户：init 指引 / Leader 模式提醒 ----
-out="$(HH_CONFIG_DIR=$T/cfg0 HH_CCM_DIR=$T/noccm HH_ALIAS_FILES=$T/noalias hh init --plain)"; has "$out" 'hh setup' && has "$out" '还没有任何端点' && pass "init 无端点 → 指引 hh setup（非 TTY 不自动进入）" || fail "init hint: $out"
+out="$(HH_CONFIG_DIR=$T/cfg0 HH_ALIAS_FILES=$T/noalias hh init --plain)"; has "$out" 'hh setup' && has "$out" '还没有任何端点' && pass "init 无端点 → 指引 hh setup（非 TTY 不自动进入）" || fail "init hint: $out"
 out="$(HH_CONFIG_DIR=$T/cfg0 hh claude --version 2>&1 || true)"; has "$out" '只有 official' && pass "Leader 模式只有 official 时提醒" || fail "leader warn: $out"
 
 # ---- 错误摘要：过滤 stderr 常驻噪音，API Error 放最前 ----

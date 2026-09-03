@@ -86,7 +86,7 @@ hh profiles set fast  --gateway relay --model vendor/coding-fast                
 hh profiles set smart --gateway relay --model vendor/reasoning-max
 ```
 
-**Already keeping keys in shell aliases or ccm?** `hh init` imports them: lines like `alias fastcc="ANTHROPIC_BASE_URL=… ANTHROPIC_AUTH_TOKEN=… claude"` become profile `fast` (aliases sharing a URL and secret collapse into one gateway), and the config files of `ccm`, hh's predecessor, are read from `~/.config/ccm`.
+**Already keeping keys in shell aliases?** `hh init` imports them: lines like `alias fastcc="ANTHROPIC_BASE_URL=… ANTHROPIC_AUTH_TOKEN=… claude"` in `~/.shell_aliases`, `~/.zshrc` or `~/.bashrc` become profile `fast`, and aliases sharing a URL and secret collapse into one gateway.
 
 Then assign, verify, launch:
 
