@@ -2,6 +2,14 @@
 
 先跑 `hh doctor`：claude 是否找到、网关密钥是否齐、profile / 角色 / 模板是否完整、技能和 MCP 是否装好。`hh doctor --net` 再对角色用到的 profile 各发一次「pong」（`--all` 全部 profile，30 个 profile 会比较久）。
 
+## 第一次配置
+
+**`hh doctor` 说「没有端点，只有 official」/ `hh claude` 提醒「只有 official 一个 profile」**：还没加任何订阅 / API key / 网关，所有角色都是 `claude` 自己的登录，能跑但不是混动。`hh setup` 一问一答加一个，或 `hh gateways set` + `hh profiles set`。已经在 shell alias / ccm 里管着 key 的用 `hh profiles import-aliases` / `import-ccm`。
+
+**`hh setup` 的 pong 测试失败**：地址、鉴权方式、密钥三者最常错。`hh read <id>` 看 stderr 尾部；`error` 里的 `API Error: …` 是网关返回的原话。地址不带末尾 `/v1`；`token` 和 `apikey` 换一种再试。
+
+**stderr 里有 `[claude-code:unrecognized_model]`**：Claude Code 对所有非 Anthropic 官方模型名都会打这条警告，包括正常工作的网关模型。它不是错误；hh 生成 `error` 摘要时会过滤掉它，真因看 `API Error` 那一行。
+
 ## 网关 / 模型相关
 
 **`failed`，`error` 含 `401` / `Invalid API key` / `authentication`**：密钥错或 `auth` 类型错（`token` → `ANTHROPIC_AUTH_TOKEN`，`apikey` → `ANTHROPIC_API_KEY`）。`hh env <profile>` 看注入了哪个；`hh gateways set <gw> --auth apikey` 换一种。

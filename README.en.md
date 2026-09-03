@@ -13,7 +13,7 @@
 <p align="center">
   <a href="#why-hybrid">Why hybrid</a> ·
   <a href="#why-herdr">Why herdr</a> ·
-  <a href="#three-minutes">Get started</a> ·
+  <a href="#get-started">Get started</a> ·
   <a href="#showcase">Showcase</a> ·
   <a href="#config">Config</a> ·
   <a href="README.md">中文</a>
@@ -23,16 +23,16 @@
 
 ## Why hybrid
 
-One Claude Code writing a feature end to end burns your most expensive tokens on planning *and* on typing, and it can only do one thing at a time. Meanwhile the other models you pay for sit in shell aliases nobody can script.
+One Claude Code writing a feature end to end burns your most expensive tokens on planning *and* on typing, and it can only do one thing at a time. Meanwhile you probably have several endpoints that can run Claude Code: the official subscription, a vendor API key, a company gateway, an Anthropic-compatible proxy for Gemini or open models. Each lives in its own shell alias or env file; you switch by hand, and nothing can orchestrate them.
 
-herdr-hybrid turns those models into a team:
+herdr-hybrid turns those endpoints into a team:
 
 <table>
   <tr>
     <td width="25%" valign="top"><strong>Expensive tokens only for judgement</strong><br>The Leader decomposes, verifies, organises review and reports. Implementation, scripts and batch work go to cheap profiles, each a headless <code>claude -p</code> process.</td>
     <td width="25%" valign="top"><strong>Parallel, not queued</strong><br>Every subtask is its own process, session and working directory. Frontend and backend start together; review overlaps with implementation.</td>
     <td width="25%" valign="top"><strong>The writer is never the reviewer</strong><br>Review runs on a different profile, read-only. The Leader still runs the build, the tests and <code>git log</code> itself. Nobody's self-report is trusted.</td>
-    <td width="25%" valign="top"><strong>Same toolchain</strong><br>It is still Claude Code. <code>hh init</code> imports your existing aliases and gateway config; <code>hh claude fast</code> is your old <code>fastcc</code>.</td>
+    <td width="25%" valign="top"><strong>Same toolchain</strong><br>It is still Claude Code. One <code>config.json</code> holds every endpoint and model; <code>hh claude fast</code> launches Claude Code with the <code>fast</code> profile. Existing aliases like <code>fastcc</code> import in one step.</td>
   </tr>
 </table>
 
@@ -42,6 +42,17 @@ herdr-hybrid turns those models into a team:
   </picture></p>
 
 The Leader works from principles, not keywords. At launch it receives the live role roster (who is good at what) and the profile list, then decides for every request what changes, what capability it needs and how completion will be proven. Workers end with a JSON report (files changed, verification commands run, assumptions); the Leader checks data, and follow-ups resume the same session.
+
+Compared with Claude Code's built-in subagents (the Agent tool):
+
+| | Built-in subagents | herdr-hybrid |
+| --- | --- | --- |
+| Models | Same account and endpoint; opus / sonnet / haiku only | Any endpoint, any model; one profile per role |
+| Lifetime | Tied to the current session | Independent processes that outlive the Leader; `hh send` resumes the same session |
+| Visibility | Folded into the chat | One herdr tab per worker, or `hh read` |
+| Verification | The subagent's own word | JSON report plus the Leader re-running the checks |
+
+With a single endpoint the built-in subagents are usually enough. This project assumes you have **two or more** and want the expensive one to judge while the cheap ones build.
 
 ## Why herdr
 
@@ -56,19 +67,38 @@ Headless processes are invisible. [herdr](https://herdr.dev) adds the window and
     <img src="docs/assets/herdr-light.png" alt="herdr workspace" width="100%">
   </picture></p>
 
-## Three minutes
+## Get started
+
+Three words: a **gateway** is an API URL plus its secret, stored once; a **profile** is gateway + model, and `hh claude <profile>` launches Claude Code with it; a **role** is a job for the Leader to hand out, pointing at a profile. `official` is the built-in profile meaning "whatever `claude` is logged in as".
 
 Requires Node ≥ 18 and Claude Code. herdr is optional.
 
 ```bash
 git clone https://github.com/wangfan1998-github/herdr-hybrid.git && cd herdr-hybrid
 ./install.sh                                # hh → ~/.local/bin, Leader skill → ~/.claude/skills, runs hh init
-hh roles set coder --profile fast           # cheap and fast does the work
-hh roles set reviewer --profile official    # smart one reviews
-hh profiles test fast                       # real round trip
-hh leader smart                         # your smartest profile leads
-hh claude                                   # start the Leader in a herdr tab, then just describe the task
 ```
+
+**First configuration.** When `hh init` finds no endpoint it drops into `hh setup` (also runnable any time): a short Q&A adds one endpoint, asks whether it leads or works, and sends a real `pong` to check connectivity. Run it once per endpoint. The non-interactive equivalent:
+
+```bash
+hh gateways set relay --url https://relay.example.com --auth token --secret sk-xxx   # endpoint + secret (or env:VAR)
+hh profiles set fast  --gateway relay --model vendor/coding-fast                     # endpoint + model = profile
+hh profiles set smart --gateway relay --model vendor/reasoning-max
+```
+
+**Already keeping keys in shell aliases or ccm?** `hh init` imports them: lines like `alias fastcc="ANTHROPIC_BASE_URL=… ANTHROPIC_AUTH_TOKEN=… claude"` become profile `fast` (aliases sharing a URL and secret collapse into one gateway), and the config files of `ccm`, hh's predecessor, are read from `~/.config/ccm`.
+
+Then assign, verify, launch:
+
+```bash
+hh roles set coder --profile fast           # cheap and fast does the work
+hh roles set reviewer --profile official    # the writer is never the reviewer
+hh leader smart                             # your smartest profile leads
+hh doctor --net                             # real round trip for every profile a role uses
+hh claude                                   # start the Leader (in a herdr tab if you want worker windows), then describe the task
+```
+
+> **Default permissions**: `hh claude` passes `--dangerously-skip-permissions`, and the `full` autonomy of coder / executor maps to `--permission-mode bypassPermissions`. Workers get your full local rights; dispatch only into directories you trust, and tighten via `claude.interactiveArgs` and each role's `autonomy` (`workspace` / `readonly`).
 
 <p align="center"><picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/loop-dark.png">
@@ -106,6 +136,8 @@ The worker's structured report:
 ```
 
 Inside an agent's shell every command above returns JSON.
+
+Granularity: even a trivial task takes a worker a minute or two (headless startup plus at least two turns). Dispatch subtasks of a few minutes to half an hour; a few-line change is faster done by the Leader itself, which the protocol also says.
 
 ## Config
 

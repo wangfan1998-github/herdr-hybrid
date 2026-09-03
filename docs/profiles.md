@@ -25,7 +25,7 @@ commonEnv                          每个 profile 都带（CLAUDE_CODE_DISABLE_N
 
 ## 交互式：`hh claude <profile> [args…]`
 
-等价于以前的 `ccm <profile>` / `xxxcc` alias：
+等价于手写的 `fastcc` 这类 alias，或旧启动器的 `ccm <profile>`：
 
 ```bash
 hh claude fast                     # 注入 env 后 exec claude --dangerously-skip-permissions
@@ -81,9 +81,17 @@ worker 拿到：stdin = 完整 `task.md`（角色规范 + 任务 + 完成要求�
 
 `hh send <id> -t "…"` 用上一轮的 `session_id` 起一个 `--resume` 的新 run，同 profile、同目录、同自主级别；只发送你的追加指令 + 完成要求。`session_id` 为空（极少见）时退化为把上一轮结论拼进新任务。
 
-## 导入
+## 迁移：从 shell alias / ccm 导入
+
+给之前就用 alias 或 ccm 管一批 key 的人：`hh init` 自动做，下面两个命令可以随时补导入。从零开始的用户用 `hh setup` 或 `hh gateways set` + `hh profiles set`，不需要这一节。
 
 ### shell alias（`hh profiles import-aliases [--dry-run] [FILE…]`）
+
+指的是这种手写的启动 alias：
+
+```bash
+alias fastcc="ANTHROPIC_BASE_URL=https://relay.example.com ANTHROPIC_AUTH_TOKEN=sk-… ANTHROPIC_MODEL=vendor/coding-fast claude"
+```
 
 默认扫 `~/.shell_aliases` `~/.zshrc` `~/.bashrc`。识别同一行里 `alias NAME=…` 且包含 `ANTHROPIC_BASE_URL=` 和 `claude` 的行；`claude` 之前的所有 `K=V` 都算环境变量。
 
@@ -93,6 +101,6 @@ worker 拿到：stdin = 完整 `task.md`（角色规范 + 任务 + 完成要求�
 
 ### ccm（`hh profiles import-ccm [--dry-run] [DIR]`）
 
-默认读 `~/.config/ccm/{gateways,profiles,roles}.conf`（空白分隔，`#` 注释，值内 `#` 保留）。`roles.conf` 里的 `claude` / `-` 映射为 `official`。已存在的条目跳过，不覆盖。
+ccm 是 hh 的前身，一个用三个 conf 文件管 profile 的脚本。默认读 `~/.config/ccm/{gateways,profiles,roles}.conf`（空白分隔，`#` 注释，值内 `#` 保留）。`roles.conf` 里的 `claude` / `-` 映射为 `official`。已存在的条目跳过，不覆盖。
 
 `hh init` 会自动做这两件事。

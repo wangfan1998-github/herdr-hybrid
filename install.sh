@@ -57,10 +57,10 @@ fi
 cat <<NEXT
 
 安装完成。下一步：
-  1) hh doctor                     体检（claude / 网关 / profile / 角色 / 技能 / MCP）
-  2) hh profiles test <name>       某个 profile 真发一次「pong」（hh doctor --net 测角色用到的全部）
-  3) eval "\$(hh profiles aliases)"  生成 <profile>cc alias，写进 ~/.shell_aliases 沿用旧习惯
+  1) hh doctor                     体检（claude / 端点 / profile / 角色 / 技能 / MCP）
+     还没有端点？hh setup 一问一答加一个（订阅 / API key / 网关 + 模型），顺手测连通
+  2) hh roles set coder --profile <便宜的>  ·  hh leader <最聪明的>   分工；hh doctor --net 全部真发一次 pong
+  3) hh claude                     启动 Leader，直接说需求（在 herdr 的 tab 里启动能看到 worker 窗口）
   4) hh install-mcp                （可选）把 hh 注册成 Claude Code 的原生 MCP 工具
-  5) 在 herdr 里开一个 tab：hh claude <你最聪明的 profile>，直接说：
-     「把这个需求拆一下，coding 派给 coder 并行做，做完让 reviewer 审，通过后汇报」
+  5) eval "\$(hh profiles aliases)"  （可选）生成 <profile>cc 快捷命令，写进 ~/.shell_aliases
 NEXT

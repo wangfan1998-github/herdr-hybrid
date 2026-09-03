@@ -10,10 +10,13 @@
 
 运行状态在 `~/.local/state/hh/`（`HH_STATE_DIR` 可改）：`runs/<id>/` 和 `events.jsonl`。
 
-改配置三种方式，效果相同、改完立即生效：
+三个概念：**网关**（gateway）= 一个 API 端点：地址 + 鉴权方式 + 密钥，只存一次；**profile** = 网关 + 模型；**角色**（role）= Leader 的分工，指向一个 profile。
+
+改配置四种方式，效果相同、改完立即生效：
 
 | 方式 | 命令 |
 | --- | --- |
+| 一问一答 | `hh setup`：加一个网关 + profile，顺手指定当 Leader / 干活，并真发一次 pong（`hh init` 没找到网关时自动进入） |
 | 对 Leader 说 | 「加个网关」「加个模型 fast2 走 relay」「让 reviewer 用 smart」「把 xx 删了」 |
 | 命令 | `hh gateways set/rm` · `hh profiles set/rm/test/import-aliases/import-ccm` · `hh roles set/rm` · `hh leader` |
 | 改文件 | 直接编辑 `config.json` |

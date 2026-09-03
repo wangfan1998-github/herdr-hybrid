@@ -23,6 +23,12 @@ process.stdin.on('end', async () => {
   else if (/report/.test(task)) final = 'done: wrote a.txt\n\n```json\n{"status":"done","summary":"fake report","changed":["a.txt"],"commits":[],"verified":[{"cmd":"true","ok":true}],"assumptions":[],"blockers":[]}\n```';
   else final = `${resume ? `resumed ${resume}; ` : ''}done: ${firstLine.slice(0, 60)}`;
   emit({ type: 'assistant', message: { content: [{ type: 'text', text: final }] } });
+  if (process.env.FAKE_NOISE) { // 模拟真实 claude 对网关模型的常驻噪音 + 真因在回复里的 API 错误
+    process.stderr.write('[claude-code:unrecognized_model] {"model":"fake-model","query_source":"sdk"}\n');
+    emit({ type: 'assistant', message: { content: [{ type: 'text', text: 'API Error: 401 invalid token' }] } });
+    emit({ type: 'result', subtype: 'success', is_error: false, result: 'API Error: 401 invalid token', session_id: session, num_turns: 1 });
+    process.exit(1);
+  }
   if (process.env.FAKE_FAIL) {
     emit({ type: 'result', subtype: 'error_during_execution', is_error: true, result: 'boom', session_id: session, num_turns: 1 });
     process.exit(1);

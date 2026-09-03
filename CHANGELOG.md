@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+面向「手里有多个订阅 / API key、想混用」的人重写上手路径；alias / ccm 导入退为老用户的一键迁移。
+
+### 新
+- `hh setup`：一问一答加一个端点 + profile（地址、鉴权、密钥不回显、模型），问它当 Leader 还是干活，顺手真发一次 pong。`hh init` 在 TTY 里没找到任何端点时自动进入（`--no-setup` 关闭）；非 TTY 打印等价命令。
+- `hh claude` Leader 模式在只有 `official` 一个 profile、或所有角色都指向 Leader 自己时，stderr 提醒一句（照常启动）。
+- `hh doctor` 无端点时的提示指向 `hh setup`。
+
+### 改
+- worker 的 `error` 摘要过滤 stderr 常驻噪音（`[claude-code:unrecognized_model]`、connectors disabled），并把回复里的 `API Error: …` 放到最前——之前地址写错会被误报成「模型不存在」。
+- README / 帮助文本 / 文档：先解释端点、profile、角色三个词；「三分钟上手」拆成「第一次配置」「已有 alias / ccm 一键迁移」「分工、验证、启动」；写明前提（两个以上端点）、与 Claude Code 自带子代理的区别、默认权限、任务粒度。`xxxcc` / `ccm` 只在迁移段落出现并解释。
+
 ## 1.0.0 — 2026-09-02
 
 换底座：从「bash alias/ccm + hl 抓屏编排」改成「一份 profile 配置 + `claude -p` 无头 worker + 文件状态」。只支持 Claude Code。

@@ -146,6 +146,30 @@ has "$out" 'gwh' && ! has "$out" 'ab#cd1234567890' && pass "mcp hh_profiles（�
 has "$out" 'pong' && pass "mcp hh_result" || fail "mcp result: $out"
 has "$out" '"code":-32601' && pass "mcp 未知方法报错" || fail "mcp err: $out"
 
+# ---- setup：交互式加端点（管道喂答案；提示走 stderr，stdout 是 JSON）----
+out="$(printf 'https://s.example.com\n\napikey\nsk-setup1234567890\nmodel-s\n\n1\nn\nn\n' | hh setup 2>/dev/null)"
+has "$out" '"gateway": "s-example-com"' && has "$out" '"use": "leader"' && pass "setup 加端点 + profile（名字默认取 host）并设为 Leader" || fail "setup: $out"
+[ "$(hh leader | jget leader)" = "s-example-com" ] && [ "$(hh profiles show s-example-com | jget profile.model)" = "model-s" ] && pass "setup 写入生效（leader / model）" || fail "setup effect"
+[ "$(hh gateways | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const g=JSON.parse(d).gateways.find(x=>x.name==="s-example-com");console.log(g.auth+"/"+g.secret)})')" = "apikey/sk-s***90" ] && pass "setup 网关 auth=apikey、密钥打码" || fail "setup gw"
+out="$(printf 'https://w.example.com\n\n\nsk-w1234567890\n\nwork\n2\nn\nn\n' | hh setup 2>/dev/null)"; has "$out" '"use": "worker"' && has "$out" '"roles": [' && pass "setup 选 2 → coder/executor" || fail "setup worker: $out"
+[ "$(hh roles | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{console.log(JSON.parse(d).roles.find(r=>r.role==="coder").profile)})')" = "work" ] && pass "setup coder → work（auth 默认 token）" || fail "setup coder"
+out="$(printf 'notaurl\n' | hh setup 2>&1 || true)"; has "$out" 'http(s)://' && has "$out" '"eof"' && pass "setup 坏地址立即报错并重问，EOF 中止" || fail "setup bad url: $out"
+out="$(printf 'https://x.example.com\n\nbasic\napikey\nsk-x1234567890\n\nxp\n3\nn\nn\n' | hh setup 2>&1)"; has "$out" '只能是 token 或 apikey' && has "$out" '"gateway": "x-example-com"' && pass "setup 鉴权方式写错只重问这一项" || fail "setup auth: $out"
+hh profiles rm xp >/dev/null; hh gateways rm x-example-com >/dev/null
+node -e 'const f=process.argv[1],fs=require("fs");const c=JSON.parse(fs.readFileSync(f,"utf8"));c.claude.bin=process.argv[2];fs.writeFileSync(f,JSON.stringify(c,null,2))' "$HH_CONFIG_DIR/config.json" "$FAKE"
+out="$(printf 'https://t.example.com\n\n\nsk-t1234567890\n\n\n3\ny\nn\n' | hh setup 2>/dev/null)"; [ "$(jget added.0.test.ok <<<"$out")" = "true" ] && pass "setup 顺手 pong 测连通（走 claude.bin）" || fail "setup test: $out"
+node -e 'const f=process.argv[1],fs=require("fs");const c=JSON.parse(fs.readFileSync(f,"utf8"));c.claude.bin="claude";fs.writeFileSync(f,JSON.stringify(c,null,2))' "$HH_CONFIG_DIR/config.json"
+hh leader ph >/dev/null; hh roles set coder --profile fake >/dev/null; hh roles set executor --profile fake >/dev/null
+for p in work t-example-com; do hh profiles rm $p >/dev/null; done; for g in w-example-com t-example-com; do hh gateways rm $g >/dev/null; done
+
+# ---- 零端点用户：init 指引 / Leader 模式提醒 ----
+out="$(HH_CONFIG_DIR=$T/cfg0 HH_CCM_DIR=$T/noccm HH_ALIAS_FILES=$T/noalias hh init --plain)"; has "$out" 'hh setup' && has "$out" '还没有任何端点' && pass "init 无端点 → 指引 hh setup（非 TTY 不自动进入）" || fail "init hint: $out"
+out="$(HH_CONFIG_DIR=$T/cfg0 hh claude --version 2>&1 || true)"; has "$out" '只有 official' && pass "Leader 模式只有 official 时提醒" || fail "leader warn: $out"
+
+# ---- 错误摘要：过滤 stderr 常驻噪音，API Error 放最前 ----
+out="$(FAKE_NOISE=1 hh dispatch -r coder -l noise -d "$T" -t "noise" --view none)"; idn="$(jget run.id <<<"$out")"; hh wait "$idn" --timeout 30 >/dev/null
+err="$(hh result "$idn" | jget run.error)"; has "$err" 'API Error: 401' && ! has "$err" 'unrecognized_model' && pass "error 摘要 = API Error，不含 unrecognized_model 噪音" || fail "noise: $err"
+
 # ---- 错误提示 ----
 out="$(hh dispatch --bogus 2>&1 || true)"; has "$out" '未知参数' && pass "未知参数报错" || fail "bogus: $out"
 out="$(HH_CONFIG_DIR=$T/none hh roles 2>&1 || true)"; has "$out" 'hh init' && pass "无配置提示 hh init" || fail "no config: $out"
