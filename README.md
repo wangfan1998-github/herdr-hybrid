@@ -7,11 +7,11 @@
 
 <p align="center">
   <strong>让你最聪明的模型当 Leader，便宜的模型干活。</strong><br>
-  Claude Code 的混动编排：网关、key、模型一份配置；Leader 拆解、派发、验收、review，worker 并行实现；每个 worker 在 herdr 里一个窗口。
+  Claude Code 的混动编排：多家订阅 / API key / 网关一份配置；不同模型交叉开发、交叉 review；Leader 拆解、验收、汇报，worker 并行实现；每个 worker 在 herdr 里一个窗口。
 </p>
 
 <p align="center">
-  <sub>Hybrid orchestration for Claude Code: one config for all your gateways and models, a smart Leader that plans and reviews, cheap workers that build in parallel, one herdr tab per worker.</sub>
+  <sub>Hybrid orchestration for Claude Code: every subscription, API key and gateway in one config; different models write, review and research each other's work; a Leader that plans and verifies, workers that build in parallel; one herdr tab per worker.</sub>
 </p>
 
 <p align="center">
@@ -37,30 +37,17 @@
 
 ## 为什么混动
 
-一个 Claude Code 从头写到尾，规划和搬砖烧的都是同一份最贵的 token，而且一次只能做一件事。你手里其实有好几个能跑 Claude Code 的端点：官方订阅、某家的 API key、公司网关、Gemini 或开源模型的兼容接口。它们各自躺在一条 shell alias 或一份环境变量里，只能手动切，脚本读不到，也编排不了。
+手里有几家订阅、API key 或网关的人，大多是这么用 Claude Code 的：
 
-herdr-hybrid 把这些端点变成一个团队：
+| 以前 | 现在用 hh |
+| --- | --- |
+| **端点散在一堆 alias 里**：`fastcc` `smartcc` `geminicc`……每条手抄一遍地址、密钥、模型，脚本读不到，编排不了 | **一份 `config.json`**：端点、密钥、模型各写一次；`hh claude fast` 启动，`hh dispatch -p fast` 派发；旧 alias 一键导入 |
+| **只能一直用一家**：写代码、审代码、查资料是同一个模型，自己审自己看不出问题 | **交叉开发、交叉 review 是默认行为**：coder 用便宜的 A 家，reviewer 用另一家只读审，researcher 用大上下文的 C 家 |
+| **一次只做一件事**：前端等后端，review 等实现 | **并行**：每个子任务一个独立进程、独立会话、独立目录，Leader 只等结果 |
+| **最贵的模型从头写到尾**：规划和搬砖烧同一份 token | **贵的只做判断**：Leader 拆解、验收、汇报；实现、跑脚本交给便宜的 |
+| **换个模型试试 = 改 alias、重开终端、重讲一遍上下文** | **`hh send` 接着同一会话返修**；`-p` 换个 profile 重派同一任务对照 |
 
-<table>
-  <tr>
-    <td width="25%" valign="top">
-      <strong>贵的 token 只花在判断上</strong><br>
-      Leader 只做拆解、验收、组织 review、汇报。实现、跑脚本、批处理交给便宜的 profile，每个 worker 是一个 <code>claude -p</code> 无头进程。
-    </td>
-    <td width="25%" valign="top">
-      <strong>并行而不是排队</strong><br>
-      每个子任务一个独立进程、独立会话、独立工作目录。前端后端同时开工，review 和实现可以交错。
-    </td>
-    <td width="25%" valign="top">
-      <strong>写的和审的不是同一个模型</strong><br>
-      reviewer 是另一个 profile 的只读进程，自夸失效。Leader 还要自己跑构建、测试、<code>git log</code>，不信任何一方的自述。
-    </td>
-    <td width="25%" valign="top">
-      <strong>不换工具链</strong><br>
-      还是 Claude Code。一份 <code>config.json</code> 管所有端点和模型；<code>hh claude fast</code> = 用 fast 这个 profile 启动 Claude Code。以前手写的 <code>fastcc</code> 这类 alias 可以一键导入。
-    </td>
-  </tr>
-</table>
+还是 Claude Code，不换工具链：Leader 是一个交互式 Claude Code，worker 是一批 `claude -p` 无头进程，各自带着自己 profile 的端点和模型。
 
 <p align="center">
   <picture>

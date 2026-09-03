@@ -7,7 +7,7 @@
 
 <p align="center">
   <strong>Let your smartest model lead. Let the cheap ones build.</strong><br>
-  Hybrid orchestration for Claude Code: one config for every gateway, key and model; a Leader that plans, verifies and reviews; workers that build in parallel; one herdr tab per worker.
+  Hybrid orchestration for Claude Code: every subscription, API key and gateway in one config; different models write, review and research each other's work; a Leader that plans and verifies; workers that build in parallel; one herdr tab per worker.
 </p>
 
 <p align="center">
@@ -23,18 +23,17 @@
 
 ## Why hybrid
 
-One Claude Code writing a feature end to end burns your most expensive tokens on planning *and* on typing, and it can only do one thing at a time. Meanwhile you probably have several endpoints that can run Claude Code: the official subscription, a vendor API key, a company gateway, an Anthropic-compatible proxy for Gemini or open models. Each lives in its own shell alias or env file; you switch by hand, and nothing can orchestrate them.
+If you hold several subscriptions, API keys or gateways, this is probably how you use Claude Code today:
 
-herdr-hybrid turns those endpoints into a team:
+| Before | With hh |
+| --- | --- |
+| **Endpoints scattered across aliases**: `fastcc`, `smartcc`, `geminicc`… each a hand-copied URL, secret and model; nothing can script or orchestrate them | **One `config.json`**: endpoint, secret and model written once; `hh claude fast` to launch, `hh dispatch -p fast` to delegate; old aliases import in one step |
+| **Stuck with one vendor at a time**: the model that writes the code also reviews it and researches for it, and never catches its own mistakes | **Cross-model development and review by default**: coder on cheap vendor A, reviewer on vendor B read-only, researcher on long-context vendor C |
+| **One thing at a time**: frontend waits for backend, review waits for implementation | **Parallel**: every subtask is its own process, session and directory; the Leader only waits for results |
+| **The most expensive model types everything**: planning and typing burn the same tokens | **Expensive tokens only for judgement**: the Leader decomposes, verifies and reports; cheap profiles implement |
+| **Trying another model = edit an alias, reopen a terminal, re-explain the context** | **`hh send` resumes the same session**; `-p` re-dispatches the same task to another profile for comparison |
 
-<table>
-  <tr>
-    <td width="25%" valign="top"><strong>Expensive tokens only for judgement</strong><br>The Leader decomposes, verifies, organises review and reports. Implementation, scripts and batch work go to cheap profiles, each a headless <code>claude -p</code> process.</td>
-    <td width="25%" valign="top"><strong>Parallel, not queued</strong><br>Every subtask is its own process, session and working directory. Frontend and backend start together; review overlaps with implementation.</td>
-    <td width="25%" valign="top"><strong>The writer is never the reviewer</strong><br>Review runs on a different profile, read-only. The Leader still runs the build, the tests and <code>git log</code> itself. Nobody's self-report is trusted.</td>
-    <td width="25%" valign="top"><strong>Same toolchain</strong><br>It is still Claude Code. One <code>config.json</code> holds every endpoint and model; <code>hh claude fast</code> launches Claude Code with the <code>fast</code> profile. Existing aliases like <code>fastcc</code> import in one step.</td>
-  </tr>
-</table>
+Still Claude Code, no new toolchain: the Leader is an interactive Claude Code session, workers are headless `claude -p` processes, each carrying its own profile's endpoint and model.
 
 <p align="center"><picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.png">
