@@ -1,4 +1,4 @@
-# profile：网关 + key + 模型
+# profile：端点 + 模型（密钥在端点上）
 
 hh 不调用任何模型 API。它只做一件事：把 profile 翻译成一组环境变量 + `claude` 的参数，然后要么交互式启动（`hh claude`），要么无头启动一个 worker（`hh dispatch`），再把 `claude -p` 的事件流翻译回统一的 transcript 和 `result.json`。
 

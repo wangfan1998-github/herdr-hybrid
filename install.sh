@@ -20,7 +20,7 @@ echo "  node: $(node --version)"
 ask(){
   case "${HH_INSTALL_DEPS:-ask}" in yes) return 0;; no) return 1;; esac
   if [ -t 0 ] && [ -t 1 ]; then
-    printf '\033[1;36m??\033[0m %s [Y/n] ' "$1"; read -r a
+    printf '\033[1;36m??\033[0m %s [Y/n] ' "$1"; read -r a || return 1
     case "$a" in n|N|no|NO) return 1;; *) return 0;; esac
   fi
   return 1
@@ -86,7 +86,7 @@ cat <<NEXT
 安装完成。下一步：
   1) hh doctor                     体检（claude / 端点 / profile / 角色 / 技能 / MCP）
      还没有端点？hh setup 一问一答加一个（订阅 / API key / 网关 + 模型），顺手测连通
-  2) hh roles set coder --profile <便宜的>  ·  hh leader <最聪明的>   分工；hh doctor --net 全部真发一次 pong
+  2) hh roles set coder --profile <便宜的>  ·  hh leader <最聪明的>   分工；hh doctor --net 对角色用到的 profile 各发一次 pong（--all 全部）
   3) hh claude                     启动 Leader，直接说需求（装了 herdr 就开在 herdr 里，worker 各一个窗口；--no-herdr 留在终端）
   4) hh install-mcp                （可选）把 hh 注册成 Claude Code 的原生 MCP 工具
   5) eval "\$(hh profiles aliases)"  （可选）生成 <profile>cc 快捷命令，写进 ~/.shell_aliases

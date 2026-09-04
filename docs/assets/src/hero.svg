@@ -214,7 +214,7 @@
     <text x="1070" y="541" text-anchor="middle" font-size="12" fill="#2F5A68">herdr：每个 worker 一个 tab（可选）</text>
 
     <!-- legend -->
-    <text x="800" y="600" font-size="12" fill="#4A6470">profile = 网关 + key + 模型</text>
+    <text x="800" y="600" font-size="12" fill="#4A6470">profile = 端点 + 模型（密钥在端点上）</text>
     <circle cx="1010" cy="596" r="6" fill="#1E5BC6"/>
     <text x="1022" y="600" font-size="12" fill="#4A6470">smart</text>
     <circle cx="1080" cy="596" r="6" fill="#3FB7A6"/>

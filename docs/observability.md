@@ -4,7 +4,7 @@
 
 | 层 | 命令 | 看什么 |
 | --- | --- | --- |
-| 快照 | `hh status`（`--all` 全部） | 每个 run：状态、角色/profile、耗时、最终回复或错误的前 50 字 |
+| 快照 | `hh status`（`--all` 最近 200 条） | 每个 run：状态、角色/profile、耗时、最终回复或错误的前 50 字 |
 | 细节 | `hh read <id> [-n 60]` · `hh result <id>` · `hh task <id>` | transcript 尾部 / 最终结论与用量 / 当时派发的原文 |
 | 回溯 | `hh log [-n 20]` · `~/.local/state/hh/runs/<id>/` | dispatch / finished / cancel / profiles_set 事件流；每个 run 的完整目录 |
 
@@ -52,7 +52,7 @@ $ claude -p --output-format stream-json --verbose --permission-mode bypassPermis
 # done · exit 0 · 4m21s
 ```
 
-- 状态判定完全不经过 herdr；tab 只是窗口。关掉 tab 不会杀 worker（它忽略 SIGHUP，继续写文件）。
+- 状态判定完全不经过 herdr；tab 只是窗口，收 tab 用 `hh close`。不要手动关正在跑的 tab：hh 的 worker 进程会把结果写完，但里面的 claude 可能随 pty 一起退出，那次 run 会以 failed 收场。
 - `hh close <id>` 收回 tab；`hh view <id>` 给后台 run 补开一个 `tail -f` 窗口。
 - 不想开窗口：`--view none` 或 `config.viewer = "none"`。
 

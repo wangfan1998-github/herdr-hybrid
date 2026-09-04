@@ -10,11 +10,15 @@
 ### 新
 - `hh claude` 默认开进 herdr：装了 herdr 就在工作区里开一个聚焦的 `hh:leader` tab 跑 Leader，server 没起自动 `herdr server` 拉起，终端里顺手附着客户端；已经在 herdr pane 里就原地启动；没装 herdr 时终端里问一句「装上并开进去？」，默认 Y，用官方脚本装完接着开（Claude Code 没装同理；非 TTY 只提示）。`--no-herdr` 留在终端且给 Leader 设 `HH_VIEWER=none` 让 worker 也不开窗口；`--herdr` 让普通模式也进 herdr；`hh viewer auto|herdr|none` 改默认；`hh claude --dry-run` 多一行 `launch`。
 - `hh install claude|herdr`：官方安装脚本装缺的依赖（TTY 先确认，`--yes` 跳过）；`install.sh` 缺依赖时会问（`HH_INSTALL_DEPS=yes|no` 跳过询问）；`hh doctor` 的提示指向它。
-- `hh setup`：一问一答加一个端点 + profile（地址、鉴权、密钥不回显、模型），问它当 Leader 还是干活，顺手真发一次 pong。`hh init` 在 TTY 里没找到任何端点时自动进入（`--no-setup` 关闭）；非 TTY 打印等价命令。
+- `hh setup`：一问一答加一个端点 + profile（地址、鉴权、密钥不回显、模型），问它当 Leader 还是干活，顺手真发一次 pong；同一地址再跑默认复用端点只加模型。`hh init` 在 TTY 里没找到任何端点时自动进入（`--no-setup` 关闭）；非 TTY 打印等价命令。
 - `hh claude` Leader 模式在只有 `official` 一个 profile、或所有角色都指向 Leader 自己时，stderr 提醒一句（照常启动）。
 - `hh doctor` 无端点时的提示指向 `hh setup`。
 
 ### 改
+- `hh dispatch -r ROLE -p PROFILE` 同时给时，模型跟 `-p` 的 profile 走（之前会把角色原 profile 的模型 id 发到另一个网关）。
+- `hh profiles aliases` 与 `hh env --reveal` 在非 TTY 下默认纯文本，`eval "$(hh profiles aliases)"` 和 `env $(hh env X --reveal)` 能直接用；显式 `--json` 仍给 JSON。
+- 删除无引用的 `prompts/planner.md`（Leader 提示词来自 skill/herdr-leader/SKILL.md）。
+- smoke 现在 100 项左右（fake-agent + fake-herdr）。
 - worker 的 `error` 摘要过滤 stderr 常驻噪音（`[claude-code:unrecognized_model]`、connectors disabled），并把回复里的 `API Error: …` 放到最前——之前地址写错会被误报成「模型不存在」。
 - README / 帮助文本 / 文档：先解释端点、profile、角色三个词；「三分钟上手」拆成「第一次配置」「已有 alias 一键迁移」「分工、验证、启动」；写明前提（两个以上端点）、与 Claude Code 自带子代理的区别、默认权限、任务粒度。`fastcc` 这类 alias 只在迁移段落出现并解释。
 
@@ -35,7 +39,7 @@
 - 密钥支持 `env:VAR` 引用；所有输出打码。
 - Leader 模式（`hh claude` 不带 profile）：协议 + 实时角色表 / profile 清单注入 system prompt；协议只讲不变量和「三问」，不按措辞分类；角色带 `desc` 用途描述，Leader 按描述选人。
 - worker 汇报契约：回复末尾的 JSON 报告解析进 `result.report`（status / summary / changed / commits / verified / assumptions / blockers）。
-- `tests/smoke.sh` 用 `tests/fake-agent` 假扮 claude 覆盖全链路（66 项，不需要真实 claude）；CI 跑 Node 18/20/22。
+- `tests/smoke.sh` 用 `tests/fake-agent` 假扮 claude 覆盖全链路（1.0.0 时 66 项，不需要真实 claude）；CI 跑 Node 18/20/22。
 
 ### 移除
 - `ccm`（bash）和 `hl`（herdr 抓屏编排）；`gateways.conf / profiles.conf / roles.conf` 改为 `config.json`（自动导入）。

@@ -1,6 +1,6 @@
 # 示例：一个需求的混动流水线
 
-> Leader（任意一家 CLI）收到需求后按下面顺序自己跑完；用户只在最后看汇报。
+> Leader（`hh claude` 启动的 Claude Code）收到需求后按下面顺序自己跑完；用户只在最后看汇报。
 > 下面用命令行写法；注册了 MCP 的 Leader 用 `hh_dispatch` / `hh_wait` / `hh_result` / `hh_send` 同义。
 
 ```text

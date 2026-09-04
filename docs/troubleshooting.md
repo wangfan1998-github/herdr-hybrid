@@ -42,7 +42,7 @@
 
 **worker 停在提问上**：无头模式下没有人回答，所以模板里写了「不要提问」；如果它还是问了，`hh send <id> -t "选方案 X，直接全量实现并提交，不要再停下确认"`。
 
-**worker 走错了网关**：`hh dispatch --dry-run -r <role>` 看最终 env。Leader 自己的 `ANTHROPIC_*` 不会漏给 worker：profile 有网关就覆盖，是 `official` 就清掉。
+**worker 走错了网关**：`hh dispatch --dry-run -r <role>` 看最终 env。网关地址、密钥、模型这 8 个变量按 profile 重算：有网关就覆盖，是 `official` 就清掉，Leader 自己的不会漏过去（其它 `ANTHROPIC_*` 照常继承）。
 
 **`hh wait` 超时（退出码 2）**：不是错误，再调一次即可。Leader 的单次 shell 调用有 600 秒上限，所以默认 540。
 

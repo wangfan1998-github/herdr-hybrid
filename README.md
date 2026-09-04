@@ -81,7 +81,7 @@ Leader 靠原则工作，不靠关键词：启动时把当前真实的角色表�
 
 - **每个 worker 一个 tab**，transcript 实时滚动：它在读什么文件、调什么工具、卡在哪。`--no-focus` 创建，不抢你的光标。
 - **工作区就是看板**。tab 1 是 Leader，其余 tab 由 Leader 建、由 Leader 收（`hh close`）。想看细节点进去，不用在里面输入。
-- **状态从不经过窗口**。完成与否只看 `result.json` 和进程；关掉 tab 活不丢，没装 herdr 一切照跑，只是没有窗口。`hh view` 随时给后台 run 补开一个。
+- **状态从不经过窗口**。完成与否只看 `result.json` 和进程；tab 只是窗口，用 `hh close` 收；没装 herdr 一切照跑，只是没有窗口。`hh view` 随时给后台 run 补开一个。
 - **不用配**。`hh claude` 默认就把 Leader 开进 herdr 的新 tab，server 没起会自动拉起，已经在 herdr 里就原地启动；没装 herdr 会问一句「装上并开进去？」，回车就用官方脚本装好接着开（Claude Code 没装同理）。不想要窗口：单次 `hh claude --no-herdr`，或 `hh viewer none` 永久关掉、不再问。
 
 <p align="center">
@@ -108,7 +108,7 @@ git clone https://github.com/wangfan1998-github/herdr-hybrid.git && cd herdr-hyb
 
 ### 第一次配置：hh setup
 
-`hh init` 找不到任何端点时会直接进入 `hh setup`（随时也能单独跑）：一问一答加一个端点，问你它是当 Leader 还是干活，最后真发一次 pong 测连通。加几个端点就跑几遍：
+在终端里跑 `hh init`，找不到任何端点时会直接进入 `hh setup`（随时也能单独跑）：一问一答加一个端点，问你它是当 Leader 还是干活，最后真发一次 pong 测连通。加几个端点就跑几遍；同一个地址再跑一遍会复用端点、只加一个模型：
 
 ```text
 $ hh setup
@@ -196,6 +196,8 @@ sequenceDiagram
 $ hh dispatch -r coder -l e2e -d ~/work -t "Create ok.txt containing: hybrid works. Then reply: done"
 run      20260902-172446-e2e-9e5c
 role     coder → fast@relay(vendor/coding-fast) · full
+cwd      ~/work
+task     ~/.local/state/hh/runs/20260902-172446-e2e-9e5c/task.md
 launch   herdr tab w1:tT
 status   ● running
 next     hh wait 20260902-172446-e2e-9e5c   ·   hh read …   ·   hh result …
@@ -208,14 +210,15 @@ $ hh wait 20260902-172446-e2e-9e5c
 [17:24:48] 20260902-172446-e2e-9e5c=running
 [17:25:18] 20260902-172446-e2e-9e5c=done
 ALL_SETTLED (30s)
+（随后打印每个 run 的状态表，略）
 ```
 
 worker 交的结构化报告，Leader 拿数据核对：
 
 ```json
-{ "status": "done", "summary": "已创建 note.txt，内容为 report contract works，验收通过",
-  "changed": ["note.txt"], "commits": [],
-  "verified": [{ "cmd": "cat note.txt", "ok": true }],
+{ "status": "done", "summary": "已创建 ok.txt，内容为 hybrid works，验收通过",
+  "changed": ["ok.txt"], "commits": [],
+  "verified": [{ "cmd": "cat ok.txt", "ok": true }],
   "assumptions": ["工作目录非 git 仓库故未提交"], "blockers": [] }
 ```
 
@@ -234,12 +237,13 @@ $ claude -p --output-format stream-json --verbose --permission-mode bypassPermis
 
 ```text
 $ hh send e2e -t "再追加一行 line two"
-run      20260902-172530-e2e-r1-11c4     parent 20260902-172446-e2e-9e5c (resumed)
+run      20260902-172530-e2e-r1-11c4
+launch   herdr tab w1:tU   parent 20260902-172446-e2e-9e5c (resumed)
 ```
 
 在 Agent 的 shell 里，以上每条命令返回的都是 JSON。
 
-粒度提醒：一个 worker 从启动到交报告，再小的任务也要一两分钟（无头 claude 启动 + 至少两轮对话）。适合派出去的是几分钟到半小时的子任务；几行的改动 Leader 自己做更快，协议里也是这么要求的。
+粒度提醒：一个 worker 从启动到交报告，再小的任务也要半分钟到两分钟（无头 claude 启动 + 至少两轮对话）。适合派出去的是几分钟到半小时的子任务；几行的改动 Leader 自己做更快，协议里也是这么要求的。
 
 ## 你可以这样说
 
@@ -301,7 +305,7 @@ hh viewer [auto|herdr|none]       Leader 与 worker 用不用 herdr 窗口
 hh env <profile> [--reveal]       看将注入的环境变量
 hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LABEL] [-d CWD] (-f FILE | -t "TASK")
 hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID
-hh send ID -t "TEXT"  ·  hh cancel ID  ·  hh close ID  ·  hh view ID  ·  hh log  ·  hh clean
+hh send ID (-t "TEXT" | -f FILE)  ·  hh cancel ID  ·  hh close ID  ·  hh view ID  ·  hh log  ·  hh clean
 hh gateways [set NAME --url U --auth token|apikey --secret S | rm NAME]
 hh profiles [show|set|rm|test NAME | aliases | import-aliases]
 hh roles [set ROLE --profile P [--autonomy A] [--desc "…"] | rm ROLE]  ·  hh leader [PROFILE]
@@ -326,7 +330,7 @@ hh install-mcp  ·  hh mcp
 <summary>安全</summary>
 
 - `hh claude` 默认 `--dangerously-skip-permissions`（`claude.interactiveArgs` 可改）；`full` 自主级别等于把本地权限交给 worker：只在信任的目录派；review / 调研用 `readonly`。
-- worker 只继承 profile 指定的网关变量，Leader 自己的 `ANTHROPIC_*` 不会漏给 `official` worker。
+- 网关地址、密钥、模型这几个变量按 worker 的 profile 重算，Leader 自己的不会漏给 `official` worker；其它环境变量照常继承。
 - 并发改同一仓库：角色模板要求只 `git add <file>`，禁止 `git add .`。
 </details>
 

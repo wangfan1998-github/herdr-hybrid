@@ -35,7 +35,7 @@ hh dispatch -r ROLE -l LABEL -d CWD (-f TASK_FILE | -t "TASK") [-p PROFILE] [-m 
 hh wait ID... [--timeout 540] # → {"settled":bool,"runs":[{id,status,report,error,…}]}；退出码 2 = 超时，再调一次
 hh result ID                  # final 全文 + report(JSON) + session_id + usage
 hh read ID [-n 60]            # transcript 尾部：说了什么、调了什么工具、stderr 尾部
-hh send ID -t "追加指令"       # 返修：恢复同一会话，返回新 run id
+hh send ID (-t "追加指令" | -f FILE)   # 返修：恢复同一会话，返回新 run id
 hh cancel ID / hh status / hh close ID
 ```
 

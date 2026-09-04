@@ -5,7 +5,7 @@
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
-mkdir -p "$T/bin"; ln -s "$here/tests/fake-herdr" "$T/bin/herdr"   # 假 herdr：不碰真机上的 herdr
+mkdir -p "$T/bin" "$T/nodeonly"; ln -s "$here/tests/fake-herdr" "$T/bin/herdr"; ln -s "$(command -v node)" "$T/nodeonly/node"   # 假 herdr：不碰真机上的 herdr；nodeonly 供「没装 herdr」的 PATH 用
 export PATH="$T/bin:$here/bin:$PATH" FAKE_HERDR_LOG="$T/herdr.log"
 export HH_CONFIG_DIR="$T/cfg" HH_STATE_DIR="$T/state" HH_ALIAS_FILES="$T/aliases"
 unset HERDR_ENV HERDR_PANE_ID HERDR_TAB_ID HERDR_WORKSPACE_ID HH_VIEWER
@@ -37,9 +37,10 @@ hh roles set coder --profile pa >/dev/null
 [ "$(hh profiles show ph | jget profile.gateway)" = "gwh" ] && pass "命令建好测试用端点 gwa/gwh 与 profile pa/ph" || fail "test fixtures"
 
 # ---- env 注入 ----
-out="$(hh env ph --reveal)"; has "$out" '"ANTHROPIC_API_KEY": "ab#cd1234567890"' && pass "apikey 注入（值含 # 原样）" || fail "env ph: $out"
-has "$out" '"FOO": "profile"' && pass "profile env 覆盖 gateway env" || fail "override: $out"
-has "$out" '"ANTHROPIC_MODEL": "model#1"' && has "$out" '"CLAUDE_CODE_SUBAGENT_MODEL": "model#1"' && pass "模型写入全部 model 变量" || fail "model env: $out"
+out="$(hh env ph --reveal)"; has "$out" 'ANTHROPIC_API_KEY=ab#cd1234567890' && ! has "$out" '{' && pass "apikey 注入（值含 # 原样）；--reveal 非 TTY 默认纯文本，供 env \$(hh env X --reveal) 用" || fail "env ph: $out"
+has "$out" 'FOO=profile' && pass "profile env 覆盖 gateway env" || fail "override: $out"
+has "$out" 'ANTHROPIC_MODEL=model#1' && has "$out" 'CLAUDE_CODE_SUBAGENT_MODEL=model#1' && pass "模型写入全部 model 变量" || fail "model env: $out"
+out="$(hh env ph --reveal --json)"; has "$out" '"ANTHROPIC_API_KEY": "ab#cd1234567890"' && pass "--reveal --json 仍给 JSON" || fail "env json: $out"
 out="$(hh env ph)"; has "$out" '"ANTHROPIC_API_KEY": "ab#c***90"' && pass "默认打码" || fail "mask: $out"
 out="$(hh env official)"; has "$out" '"ANTHROPIC_BASE_URL"' && ! has "$out" '"ANTHROPIC_BASE_URL":' && pass "official 会清掉继承的网关变量" || fail "official unset: $out"
 out="$(hh env pa -m other)"; has "$out" '"ANTHROPIC_MODEL": "other"' && pass "env -m 覆盖模型" || fail "env -m: $out"
@@ -53,7 +54,8 @@ out="$(hh gateways rm gw2 2>&1 || true)"; has "$out" '仍被 profile 引用' && 
 out="$(hh profiles rm p2 --json)"; has "$out" '"removed": "p2"' && pass "profiles rm" || fail "p rm: $out"
 out="$(hh gateways rm gw2 --json)"; has "$out" '"removed": "gw2"' && pass "gateways rm" || fail "gw rm2: $out"
 out="$(hh profiles rm official 2>&1 || true)"; has "$out" '内置' && pass "official 不可删" || fail "rm official: $out"
-out="$(hh profiles aliases)"; has "$out" "alias pacc='" && has "$out" "claude pa'" && pass "profiles aliases" || fail "aliases: $out"
+out="$(hh profiles aliases)"; [ "${out:0:6}" = "alias " ] && has "$out" "alias pacc='" && has "$out" "claude pa'" && pass "profiles aliases 非 TTY 也是纯文本（eval 可直接用）" || fail "aliases: $out"
+out="$(bash -c 'shopt -s expand_aliases; eval "$(hh profiles aliases)"; alias pacc' 2>&1)"; has "$out" "claude pa" && pass 'eval "$(hh profiles aliases)" 真能定义 alias' || fail "eval aliases: $out"
 out="$(hh roles --plain)"; has "$out" 'coder' && has "$out" 'pa' && pass "hh roles 表格" || fail "roles table: $out"
 out="$(hh leader ph --json)"; has "$out" '"leader": "ph"' && pass "hh leader 设置" || fail "leader: $out"
 
@@ -107,6 +109,8 @@ hh cancel "$id5" >/dev/null
 
 # ---- dry-run argv ----
 out="$(hh dispatch --dry-run -p pa -d "$T" -t x)"; has "$out" '"-p"' && has "$out" 'bypassPermissions' && has "$out" '"model-a"' && has "$out" '"ANTHROPIC_AUTH_TOKEN": "sk-a***90"' && pass "dry-run argv + env 打码" || fail "dry: $out"
+out="$(hh dispatch --dry-run -r coder -p pa -d "$T" -t x)"; [ "$(jget model <<<"$out")" = "model-a" ] && pass "-r 与 -p 同时给：模型跟 -p 的 profile 走（不带角色原 profile 的 fake-model）" || fail "dry -r -p model: $out"
+out="$(hh dispatch --dry-run -r coder -p pa -m m9 -d "$T" -t x)"; [ "$(jget model <<<"$out")" = "m9" ] && pass "-r -p -m：-m 最高优先" || fail "dry -m: $out"
 out="$(hh dispatch --dry-run -p pa -a readonly -d "$T" -t x)"; has "$out" '"default"' && has "$out" 'git diff' && pass "readonly 映射" || fail "dry ro: $out"
 out="$(hh dispatch --dry-run -p pa -a workspace -d "$T" -t x)"; has "$out" 'acceptEdits' && pass "workspace 映射" || fail "dry ws: $out"
 
@@ -141,6 +145,10 @@ has "$out" '"gateway": "s-example-com"' && has "$out" '"use": "leader"' && pass 
 [ "$(hh gateways | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const g=JSON.parse(d).gateways.find(x=>x.name==="s-example-com");console.log(g.auth+"/"+g.secret)})')" = "apikey/sk-s***90" ] && pass "setup 网关 auth=apikey、密钥打码" || fail "setup gw"
 out="$(printf 'https://w.example.com\n\n\nsk-w1234567890\n\nwork\n2\nn\nn\n' | hh setup 2>/dev/null)"; has "$out" '"use": "worker"' && has "$out" '"roles": [' && pass "setup 选 2 → coder/executor" || fail "setup worker: $out"
 [ "$(hh roles | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{console.log(JSON.parse(d).roles.find(r=>r.role==="coder").profile)})')" = "work" ] && pass "setup coder → work（auth 默认 token）" || fail "setup coder"
+gw_before="$(hh gateways | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>console.log(JSON.parse(d).gateways.length))')"
+out="$(printf 'https://s.example.com\n\nmodel-s2\n\n3\nn\nn\n' | hh setup 2>/dev/null)"; has "$out" '"gateway": "s-example-com"' && has "$out" '"profile": "model-s2"' && pass "setup 同地址 → 默认复用端点，只加模型，profile 名默认取模型尾" || fail "setup reuse: $out"
+[ "$(hh gateways | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>console.log(JSON.parse(d).gateways.length))')" = "$gw_before" ] && pass "复用后端点数不变" || fail "reuse gw count"
+hh profiles rm model-s2 >/dev/null
 out="$(printf 'notaurl\n' | hh setup 2>&1 || true)"; has "$out" 'http(s)://' && has "$out" '"eof"' && pass "setup 坏地址立即报错并重问，EOF 中止" || fail "setup bad url: $out"
 out="$(printf 'https://x.example.com\n\nbasic\napikey\nsk-x1234567890\n\nxp\n3\nn\nn\n' | hh setup 2>&1)"; has "$out" '只能是 token 或 apikey' && has "$out" '"gateway": "x-example-com"' && pass "setup 鉴权方式写错只重问这一项" || fail "setup auth: $out"
 hh profiles rm xp >/dev/null; hh gateways rm x-example-com >/dev/null
@@ -167,7 +175,11 @@ out="$(hh claude --version 2>&1 || true)"; has "$out" 'Leader 模式' && has "$o
 hh profiles set nobin --gateway gwa --model m --bin /nonexistent/claude >/dev/null
 out="$(hh claude nobin --no-herdr 2>&1 || true)"; has "$out" '找不到 /nonexistent/claude' && has "$out" 'hh install claude' && pass "claude 可执行文件不存在 → 启动前报错并指向 hh install claude" || fail "no claude bin: $out"
 hh profiles rm nobin >/dev/null
-grep -q 'tab create --workspace w1' "$FAKE_HERDR_LOG" && grep -q 'claude --no-herdr --leader ph --version' "$FAKE_HERDR_LOG" && ! grep -q -- '--no-focus.*hh:leader\|hh:leader.*--no-focus' "$FAKE_HERDR_LOG" && pass "herdr：建聚焦 tab，pane 里跑 hh claude --no-herdr --leader ph（参数透传）" || fail "herdr log: $(cat "$FAKE_HERDR_LOG")"
+grep -q 'tab create --workspace w1' "$FAKE_HERDR_LOG" && grep -q 'claude --in-herdr-tab --leader ph --version' "$FAKE_HERDR_LOG" && ! grep -q -- '--no-herdr' "$FAKE_HERDR_LOG" && ! grep -q -- '--no-focus.*hh:leader\|hh:leader.*--no-focus' "$FAKE_HERDR_LOG" && pass "herdr：建聚焦 tab，pane 里跑 hh claude --in-herdr-tab --leader ph（不是 --no-herdr，worker 仍开窗口）" || fail "herdr log: $(cat "$FAKE_HERDR_LOG")"
+out="$(hh claude --dry-run --in-herdr-tab)"; has "$out" '"launch": "pane"' && ! has "$out" 'HH_VIEWER' && pass "--in-herdr-tab → 原地启动且不设 HH_VIEWER" || fail "in-tab: $out"
+out="$(hh claude --version 2>/dev/null)"; node -e 'JSON.parse(require("fs").readFileSync(0,"utf8"))' <<<"$out" && pass "非 TTY 下 hh claude 的 stdout 是纯 JSON（提示行走 stderr）" || fail "json stdout: $out"
+HH_VIEWER=none hh leader ph >/dev/null; [ "$(hh viewer | jget viewer)" = "auto" ] && pass "HH_VIEWER 只在本进程生效，不写回 config.json" || fail "viewer persisted: $(hh viewer)"
+out="$(FAKE_HERDR_DOWN=1 HH_HERDR_START_TIMEOUT_MS=800 hh claude --version 2>&1)"; has "$out" '"launch": "terminal"' && has "$out" '就绪' && pass "herdr server 起不来 → 回退终端，不崩" || fail "server down: $out"
 : > "$FAKE_HERDR_LOG"
 out="$(hh claude --dry-run)"; has "$out" '"launch": "herdr"' && pass "dry-run: Leader 模式 launch=herdr" || fail "dry herdr: $out"
 out="$(hh claude --dry-run --no-herdr)"; has "$out" '"launch": "terminal"' && has "$out" '"HH_VIEWER": "none"' && pass "--no-herdr → 当前终端，且 worker 不开窗口（HH_VIEWER=none）" || fail "dry no-herdr: $out"
@@ -175,14 +187,14 @@ out="$(HERDR_ENV=1 HERDR_PANE_ID=w1:p1 hh claude --dry-run)"; has "$out" '"launc
 out="$(HH_VIEWER=none hh claude --dry-run)"; has "$out" '"launch": "terminal"' && pass "HH_VIEWER=none → 终端" || fail "dry viewer env: $out"
 out="$(hh claude --dry-run pa)"; has "$out" '"launch": "terminal"' && pass "普通模式默认当前终端" || fail "dry plain: $out"
 out="$(hh claude --dry-run --herdr pa)"; has "$out" '"launch": "herdr"' && has "$out" '"herdr_argv": [' && pass "--herdr 普通模式也进 herdr" || fail "dry herdr plain: $out"
-out="$(PATH="$here/bin:$(dirname "$(command -v node)"):/usr/bin:/bin" hh claude --dry-run)"; has "$out" '"launch": "terminal"' && has "$out" 'herdr 未安装' && has "$out" 'hh install herdr' && pass "没装 herdr → 终端 + 安装提示" || fail "dry no herdr: $out"
-out="$(PATH="$here/bin:$(dirname "$(command -v node)"):/usr/bin:/bin" hh claude --dry-run --herdr 2>&1 || true)"; has "$out" 'herdr 未安装' && pass "--herdr 但没装 → 报错" || fail "force herdr: $out"
+out="$(PATH="$here/bin:$T/nodeonly:/usr/bin:/bin" hh claude --dry-run)"; has "$out" '"launch": "terminal"' && has "$out" 'herdr 未安装' && has "$out" 'hh install herdr' && pass "没装 herdr → 终端 + 安装提示" || fail "dry no herdr: $out"
+out="$(PATH="$here/bin:$T/nodeonly:/usr/bin:/bin" hh claude --dry-run --herdr 2>&1 || true)"; has "$out" 'herdr 未安装' && pass "--herdr 但没装 → 报错" || fail "force herdr: $out"
 out="$(hh viewer none --json)"; has "$out" '"viewer": "none"' && [ "$(hh claude --dry-run | jget launch)" = "terminal" ] && pass "hh viewer none → Leader 也留在终端" || fail "viewer none: $out"
 out="$(hh viewer bogus 2>&1 || true)"; has "$out" 'auto|herdr|none' && pass "hh viewer 校验" || fail "viewer bad: $out"
 hh viewer auto >/dev/null
 out="$(hh install nope 2>&1 || true)"; has "$out" 'claude|herdr' && pass "hh install 只认 claude|herdr" || fail "install nope: $out"
 out="$(hh install herdr --yes)"; has "$out" '"already": true' && pass "hh install herdr：已装就不重装" || fail "install herdr: $out"
-out="$(PATH="$here/bin:$(dirname "$(command -v node)"):/usr/bin:/bin" hh install herdr)"; has "$out" '"ran": false' && has "$out" 'install.sh' && pass "非 TTY 不带 --yes 只打印安装命令" || fail "install print: $out"
+out="$(PATH="$here/bin:$T/nodeonly:/usr/bin:/bin" hh install herdr)"; has "$out" '"ran": false' && has "$out" 'install.sh' && pass "非 TTY 不带 --yes 只打印安装命令" || fail "install print: $out"
 out="$(hh claude --dry-run)"; has "$out" '"leader": true' && has "$out" '--append-system-prompt' && has "$out" 'herdr-hybrid Leader 模式' && has "$out" '先三问' && pass "Leader 模式注入协议（原则，不是对照表）" || fail "leader dry: $out"
 out="$(hh claude --dry-run pa --foo)"; has "$out" '"leader": false' && ! has "$out" 'append-system-prompt' && has "$out" '"--foo"' && has "$out" 'sk-a***90' && pass "普通模式不注入协议、参数透传、env 打码" || fail "plain dry: $out"
 out="$(hh claude --leader pa --dry-run)"; has "$out" '"leader": true' && has "$out" '"profile": "pa"' && pass "--leader 指定 profile" || fail "leader pa: $out"

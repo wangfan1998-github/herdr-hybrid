@@ -111,7 +111,7 @@
     <polygon points="1010,340 1030,360 1010,360" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1"/>
     <text x="802" y="364" font-size="14" font-weight="bold" fill="#1E3A8A">config.json</text>
     <text x="802" y="386" font-size="13" fill="#374151">端点 → profile → 角色</text>
-    <text x="802" y="406" font-size="11" fill="#9CA3AF">网关 + key + 模型 = 一个 profile</text>
+    <text x="802" y="406" font-size="11" fill="#9CA3AF">端点 + 模型 = 一个 profile</text>
     <line x1="786" y1="378" x2="766" y2="378" stroke="#2563EB" stroke-width="2"/>
     <polygon points="766,372 766,384 756,378" fill="#2563EB"/>
 

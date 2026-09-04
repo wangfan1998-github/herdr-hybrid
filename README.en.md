@@ -16,6 +16,7 @@
   <a href="#why-herdr">Why herdr</a> ·
   <a href="#get-started">Get started</a> ·
   <a href="#showcase">Showcase</a> ·
+  <a href="#what-you-can-say">Prompts</a> ·
   <a href="#config">Config</a> ·
   <a href="README.md">中文</a>
 </p>
@@ -63,7 +64,7 @@ Headless processes are invisible. [herdr](https://herdr.dev) adds the window and
 
 - **One tab per worker** with the transcript scrolling live: which files it reads, which tools it calls, where it is stuck. Created with `--no-focus`, so your cursor stays put.
 - **The workspace is the dashboard.** Tab 1 is the Leader; the rest are opened and closed by the Leader (`hh close`).
-- **State never goes through the window.** Completion is decided by `result.json` and the process. Close a tab and nothing is lost; without herdr everything still runs, just unwatched.
+- **State never goes through the window.** Completion is decided by `result.json` and the process. Tabs are just windows, collected with `hh close`; without herdr everything still runs, just unwatched.
 - **Zero setup.** `hh claude` opens the Leader in a new herdr tab by default, starts the server if needed, and runs in place when you are already inside herdr. If herdr is not installed it asks "install it and open the Leader there?"; Enter runs the official installer and continues (same for a missing Claude Code). Opt out per launch with `hh claude --no-herdr`, or permanently with `hh viewer none`.
 
 <p align="center"><picture>
@@ -84,7 +85,7 @@ git clone https://github.com/wangfan1998-github/herdr-hybrid.git && cd herdr-hyb
 ./install.sh                                # hh → ~/.local/bin, Leader skill → ~/.claude/skills, offers Claude Code / herdr, runs hh init
 ```
 
-**First configuration.** When `hh init` finds no endpoint it drops into `hh setup` (also runnable any time): a short Q&A adds one endpoint, asks whether it leads or works, and sends a real `pong` to check connectivity. Run it once per endpoint. The non-interactive equivalent:
+**First configuration.** When `hh init` runs in a terminal and finds no endpoint it drops into `hh setup` (also runnable any time): a short Q&A adds one endpoint, asks whether it leads or works, and sends a real `pong` to check connectivity. Run it once per endpoint; running it again with the same URL reuses the endpoint and only adds a model. The non-interactive equivalent:
 
 ```bash
 hh gateways set relay --url https://relay.example.com --auth token --secret sk-xxx   # endpoint + secret (or env:VAR)
@@ -93,6 +94,8 @@ hh profiles set smart --gateway relay --model vendor/reasoning-max
 ```
 
 **Already keeping keys in shell aliases?** `hh init` imports them: lines like `alias fastcc="ANTHROPIC_BASE_URL=… ANTHROPIC_AUTH_TOKEN=… claude"` in `~/.shell_aliases`, `~/.zshrc` or `~/.bashrc` become profile `fast`, and aliases sharing a URL and secret collapse into one gateway.
+
+Note: hh's interactive prompts, help text and Leader reports are in Chinese for now; every command also returns JSON when stdout is not a terminal.
 
 Then assign, verify, launch:
 
@@ -145,6 +148,8 @@ Real output; gateway and model names replaced with placeholders.
 $ hh dispatch -r coder -l e2e -d ~/work -t "Create ok.txt containing: hybrid works. Then reply: done"
 run      20260902-172446-e2e-9e5c
 role     coder → fast@relay(vendor/coding-fast) · full
+cwd      ~/work
+task     ~/.local/state/hh/runs/20260902-172446-e2e-9e5c/task.md
 launch   herdr tab w1:tT
 status   ● running
 
@@ -152,20 +157,53 @@ $ hh wait 20260902-172446-e2e-9e5c
 [17:24:48] 20260902-172446-e2e-9e5c=running
 [17:25:18] 20260902-172446-e2e-9e5c=done
 ALL_SETTLED (30s)
+(followed by a status table of the runs, omitted)
 ```
 
-The worker's structured report:
+The worker's structured report (Chinese in the real output):
 
 ```json
-{ "status": "done", "summary": "created note.txt, verified",
-  "changed": ["note.txt"], "commits": [],
-  "verified": [{ "cmd": "cat note.txt", "ok": true }],
+{ "status": "done", "summary": "created ok.txt with 'hybrid works', verified",
+  "changed": ["ok.txt"], "commits": [],
+  "verified": [{ "cmd": "cat ok.txt", "ok": true }],
   "assumptions": ["not a git repo, nothing committed"], "blockers": [] }
+```
+
+What the herdr tab shows at the same moment:
+
+```text
+$ claude -p --output-format stream-json --verbose --permission-mode bypassPermissions --model vendor/coding-fast
+  · init model=vendor/coding-fast mode=bypassPermissions
+  ⚙ Write ok.txt
+⏺ done
+  ■ success
+# done · exit 0 · 30s
+```
+
+A follow-up resumes the same session:
+
+```text
+$ hh send e2e -t "append a second line: line two"
+run      20260902-172530-e2e-r1-11c4
+launch   herdr tab w1:tU   parent 20260902-172446-e2e-9e5c (resumed)
 ```
 
 Inside an agent's shell every command above returns JSON.
 
-Granularity: even a trivial task takes a worker a minute or two (headless startup plus at least two turns). Dispatch subtasks of a few minutes to half an hour; a few-line change is faster done by the Leader itself, which the protocol also says.
+Granularity: even a trivial task takes a worker thirty seconds to two minutes (headless startup plus at least two turns). Dispatch subtasks of a few minutes to half an hour; a few-line change is faster done by the Leader itself, which the protocol also says.
+
+## What you can say
+
+Talk to the Leader in plain language; it decides the type of work and who gets it:
+
+```text
+Add CSV export to the order list, frontend and backend, then have it reviewed
+Research what ~/code/foo does; give me the entry points and core flow with file:line
+Run every go test under be/ and summarise failures per package
+Review /tmp/export.diff, focus on the API contract and error handling
+Who is working right now? Nudge anyone stuck
+Switch the reviewer to smart; add a tester role on fast that only runs tests
+```
 
 ## Config
 
@@ -187,8 +225,53 @@ Granularity: even a trivial task takes a worker a minute or two (headless startu
 }
 ```
 
-A profile is gateway + key + model. Roles are data: any name, `desc` tells the Leader what it is for, `autonomy` maps to `--permission-mode`. Secrets live only in this file (or `env:VAR`) and are masked in every output.
+A profile is gateway + model; the key lives on the gateway and is stored once. Roles are data: any name, `desc` tells the Leader what it is for, `autonomy` maps to `--permission-mode`. Secrets live only in this file (or `env:VAR`) and are masked in every output.
 
-Docs: [config](docs/config.md) · [profiles & report contract](docs/profiles.md) · [observability](docs/observability.md) · [troubleshooting](docs/troubleshooting.md) · [Leader protocol](skill/herdr-leader/SKILL.md)
+## More
 
-<p align="center"><sub>Optional viewer built on <a href="https://herdr.dev">herdr</a> · README structure after <a href="https://github.com/0x0funky/agent-sprite-forge">agent-sprite-forge</a>, design guidance from <a href="https://github.com/pbakaus/impeccable">impeccable</a> · MIT</sub></p>
+<details>
+<summary>Command cheat sheet</summary>
+
+```bash
+hh init [--force] [--no-setup]    write config; import claude-launch aliases; drop into hh setup when no endpoint exists
+hh setup                          Q&A: add an endpoint + profile, assign it, send a pong
+hh install claude|herdr [--yes]   install a missing dependency with its official script
+hh doctor [--net] [--all]         health check; --net sends a real pong per profile used by a role
+hh claude [--leader] [profile]    no profile = Leader mode (opens in herdr by default); with profile = launch in this terminal
+    --no-herdr | --herdr          stay in this terminal, workers without windows | open normal mode in herdr too
+hh viewer [auto|herdr|none]       whether the Leader and workers use herdr windows
+hh env <profile> [--reveal]       the environment that will be injected
+hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LABEL] [-d CWD] (-f FILE | -t "TASK")
+hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID
+hh send ID (-t "TEXT" | -f FILE)  ·  hh cancel ID  ·  hh close ID  ·  hh view ID  ·  hh log  ·  hh clean
+hh gateways [set NAME --url U --auth token|apikey --secret S | rm NAME]
+hh profiles [show|set|rm|test NAME | aliases | import-aliases]
+hh roles [set ROLE --profile P [--autonomy A] [--desc "…"] | rm ROLE]  ·  hh leader [PROFILE]
+hh install-mcp  ·  hh mcp
+```
+</details>
+
+<details>
+<summary>Migrating from shell aliases</summary>
+
+`hh init` imports them automatically; `hh profiles import-aliases [--dry-run] [FILE…]` re-imports any time (existing entries are kept). Only single-line `alias NAME=…` entries containing `ANTHROPIC_BASE_URL=` and `claude` are recognised; multi-line aliases and functions need a manual `hh profiles set`.
+
+| Before | Now |
+| --- | --- |
+| `fastcc` | `hh claude fast`; `eval "$(hh profiles aliases)"` regenerates the same alias names |
+| `ANTHROPIC_MODEL` in the alias | the profile's `model` |
+| other `K=V` in the alias | the profile's `env` (values equal to `commonEnv` are dropped) |
+| several aliases with the same URL and secret | one gateway, several profiles |
+</details>
+
+<details>
+<summary>Security</summary>
+
+- `hh claude` passes `--dangerously-skip-permissions` by default (`claude.interactiveArgs`); `full` autonomy hands a worker your local rights, so dispatch only into directories you trust and keep review / research roles `readonly`.
+- The gateway URL, secret and model variables are recomputed per worker profile; the Leader's own never leak into an `official` worker. Other environment variables are inherited as usual.
+- Concurrent workers in one repo: the role templates require `git add <file>` and forbid `git add .`.
+</details>
+
+Docs: [config](docs/config.md) · [profiles & report contract](docs/profiles.md) · [observability](docs/observability.md) · [troubleshooting](docs/troubleshooting.md) · [Leader protocol](skill/herdr-leader/SKILL.md) · [example pipeline](examples/feature-pipeline.md)
+
+<p align="center"><sub>Optional viewer built on <a href="https://herdr.dev">herdr</a> · README structure after <a href="https://github.com/0x0funky/agent-sprite-forge">agent-sprite-forge</a>, design guidance from <a href="https://github.com/pbakaus/impeccable">impeccable</a> and <a href="https://github.com/VoltAgent/awesome-design-md">awesome-design-md</a> · MIT</sub></p>

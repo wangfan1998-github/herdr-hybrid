@@ -5,18 +5,18 @@
 ```text
 ~/.config/hh/
 ├── config.json     gateways + profiles + roles + 默认值（600 权限，含密钥）
-└── prompts/        角色模板（coder.md / executor.md / reviewer.md / researcher.md / planner.md …）
+└── prompts/        角色模板（coder.md / executor.md / reviewer.md / researcher.md …）
 ```
 
 运行状态在 `~/.local/state/hh/`（`HH_STATE_DIR` 可改）：`runs/<id>/` 和 `events.jsonl`。
 
-三个概念：**网关**（gateway）= 一个 API 端点：地址 + 鉴权方式 + 密钥，只存一次；**profile** = 网关 + 模型；**角色**（role）= Leader 的分工，指向一个 profile。
+三个概念：**端点**（gateway，也叫网关）= 地址 + 鉴权方式 + 密钥，只存一次；**profile** = 端点 + 模型；**角色**（role）= Leader 的分工，指向一个 profile。
 
 改配置四种方式，效果相同、改完立即生效：
 
 | 方式 | 命令 |
 | --- | --- |
-| 一问一答 | `hh setup`：加一个网关 + profile，顺手指定当 Leader / 干活，并真发一次 pong（`hh init` 没找到网关时自动进入） |
+| 一问一答 | `hh setup`：加一个端点 + profile，顺手指定当 Leader / 干活，并真发一次 pong（终端里 `hh init` 没找到端点时自动进入） |
 | 对 Leader 说 | 「加个网关」「加个模型 fast2 走 relay」「让 reviewer 用 smart」「把 xx 删了」 |
 | 命令 | `hh gateways set/rm` · `hh profiles set/rm/test/import-aliases` · `hh roles set/rm` · `hh leader` |
 | 改文件 | 直接编辑 `config.json` |
@@ -41,7 +41,7 @@
 | 字段 | 说明 |
 | --- | --- |
 | `leader` | 你通常用哪个 profile 当 Leader（`hh leader <profile>` 改）；`hh doctor --net` 会顺带测它 |
-| `viewer` | Leader 和 worker 用不用 herdr 窗口。`auto`（默认：装了 herdr 就用，`hh claude` 开在新 tab、worker 各一个 tab；server 没起自动拉起；没装则终端 / 后台）· `herdr`（必须，没装报错）· `none`（从不）。`hh viewer <v>` 改；单次 `hh claude --no-herdr` / `hh dispatch --view none`；环境变量 `HH_VIEWER` 覆盖 |
+| `viewer` | Leader 和 worker 用不用 herdr 窗口。`auto`（默认：装了 herdr 就用。`hh claude` 开在新 tab，server 没起会拉起；`hh dispatch` 在 server 在跑时给 worker 各开一个 tab，否则后台；没装则终端 / 后台）· `herdr`（必须，没装报错）· `none`（从不）。`hh viewer <v>` 改；单次 `hh claude --no-herdr` / `hh dispatch --view none`；环境变量 `HH_VIEWER` 覆盖 |
 | `workspace` | herdr 工作区 id，默认 `w1` |
 | `footer` | 拼在每个任务文件末尾的「完成要求」，默认要求 worker 在回复末尾附一个 JSON 报告（`status / summary / changed / commits / verified / assumptions / blockers`），hh 解析进 `result.report`。改了它记得保留 json 块的要求，否则 `report` 为空 |
 | `claude.bin` | `claude` 可执行文件；profile 可单独覆盖 |
@@ -83,7 +83,7 @@ hh gateways rm vendor          # 仍被 profile 引用会拒绝
 
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
-| `gateway` | 是 | `gateways` 里的名字；`null` = official（不注入网关变量，并清掉继承来的） |
+| `gateway` | 是（可为 `null`） | `gateways` 里的名字；`null` / `official` = 不注入网关变量，并清掉继承来的；`hh profiles set` 不给 `--gateway` 即为 null |
 | `model` | 否 | 传给 `ANTHROPIC_MODEL` 及 `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL`、`CLAUDE_CODE_SUBAGENT_MODEL`；空 = 网关默认 |
 | `env` | 否 | 只对这个 profile 生效的环境变量；同名覆盖网关的 |
 | `args` | 否 | 追加给 `claude` 的参数（交互式和无头都加） |
@@ -129,7 +129,7 @@ hh roles rm tester
 hh leader smart
 ```
 
-模型的最终取值顺序：`hh dispatch -m` > `roles.<role>.model` > `profiles.<profile>.model` > 网关默认。
+模型的最终取值顺序：`hh dispatch -m` > `roles.<role>.model` > `profiles.<profile>.model` > 网关默认。`-r` 与 `-p` 同时给时，角色上的 `model` 不再生效，用 `-p` 那个 profile 自己的模型（要换模型再加 `-m`）。
 
 ## prompts/
 
