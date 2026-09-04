@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+'use strict';
+// 假扮 herdr CLI：status / tab create / pane run / tab close / server / 无参数附着。把每次调用写进 $FAKE_HERDR_LOG。
+const fs = require('fs');
+const args = process.argv.slice(2);
+const log = process.env.FAKE_HERDR_LOG;
+if (log) fs.appendFileSync(log, `${args.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(' ') || '(attach)'}\n`);
+const [a, b] = args;
+if (a === 'status') { process.stdout.write(`client:\n  version: fake\nserver:\n  status: ${process.env.FAKE_HERDR_DOWN ? 'stopped' : 'running'}\n`); process.exit(0); }
+if (a === 'tab' && b === 'create') {
+  const n = Math.floor(Math.random() * 900) + 100;
+  process.stdout.write(`${JSON.stringify({ result: { tab: { tab_id: `w1:t${n}` }, root_pane: { pane_id: `w1:p${n}` } } })}\n`);
+  process.exit(0);
+}
+if (a === 'tab' && (b === 'close' || b === 'focus')) process.exit(0);
+if (a === 'pane' && b === 'run') process.exit(0);
+if (a === 'server') process.exit(0);
+if (a === '--version') { process.stdout.write('herdr fake\n'); process.exit(0); }
+if (!a) process.exit(0); // 附着客户端：立刻返回
+process.stderr.write(`fake-herdr: unknown ${args.join(' ')}\n`);
+process.exit(1);

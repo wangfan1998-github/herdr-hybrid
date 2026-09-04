@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # 不依赖真实 claude 的冒烟测试：tests/fake-agent 假扮 claude（profile 的 bin 指向它）。
-# 覆盖：init（导入 shell alias）/ gateways / profiles / env 注入与继承清理 / roles / dispatch / wait / result / read / task /
+# 覆盖：init（导入 shell alias）/ herdr 唤起（fake-herdr）/ install / viewer / gateways / profiles / env 注入与继承清理 / roles / dispatch / wait / result / read / task /
 #       send(resume) / cancel / failed / crashed / 超时退出码 / dry-run argv / aliases / doctor / log / status / MCP / 错误提示
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export PATH="$here/bin:$PATH"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
+mkdir -p "$T/bin"; ln -s "$here/tests/fake-herdr" "$T/bin/herdr"   # 假 herdr：不碰真机上的 herdr
+export PATH="$T/bin:$here/bin:$PATH" FAKE_HERDR_LOG="$T/herdr.log"
 export HH_CONFIG_DIR="$T/cfg" HH_STATE_DIR="$T/state" HH_ALIAS_FILES="$T/aliases"
+unset HERDR_ENV HERDR_PANE_ID HERDR_TAB_ID HERDR_WORKSPACE_ID HH_VIEWER
 pass(){ echo "PASS $*"; }; fail(){ echo "FAIL $*"; exit 1; }
 has(){ [[ "$1" == *"$2"* ]]; }
 jget(){ node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const o=JSON.parse(d);const v=process.argv[1].split(".").reduce((a,k)=>a==null?a:a[k],o);console.log(v==null?"":typeof v==="object"?JSON.stringify(v):v)})' "$1"; }
@@ -160,7 +162,23 @@ err="$(hh result "$idn" | jget run.error)"; has "$err" 'API Error: 401' && ! has
 out="$(hh dispatch --bogus 2>&1 || true)"; has "$out" '未知参数' && pass "未知参数报错" || fail "bogus: $out"
 out="$(HH_CONFIG_DIR=$T/none hh roles 2>&1 || true)"; has "$out" 'hh init' && pass "无配置提示 hh init" || fail "no config: $out"
 out="$(hh claude --help 2>&1)"; has "$out" '用法' && pass "hh claude --help 给用法" || fail "claude usage: $out"
-out="$(hh claude --version 2>&1 || true)"; has "$out" 'Leader 模式' && has "$out" 'profile ph' && pass "hh claude 不带 profile = leader 模式" || fail "claude leader: $out"   # CI 没有 claude，只断言头部
+out="$(hh claude --version 2>&1 || true)"; has "$out" 'Leader 模式' && has "$out" 'profile ph' && has "$out" '"launch": "herdr"' && pass "hh claude 不带 profile = leader 模式，默认开进 herdr" || fail "claude leader: $out"
+grep -q 'tab create --workspace w1' "$FAKE_HERDR_LOG" && grep -q 'claude --no-herdr --leader ph --version' "$FAKE_HERDR_LOG" && ! grep -q -- '--no-focus.*hh:leader\|hh:leader.*--no-focus' "$FAKE_HERDR_LOG" && pass "herdr：建聚焦 tab，pane 里跑 hh claude --no-herdr --leader ph（参数透传）" || fail "herdr log: $(cat "$FAKE_HERDR_LOG")"
+: > "$FAKE_HERDR_LOG"
+out="$(hh claude --dry-run)"; has "$out" '"launch": "herdr"' && pass "dry-run: Leader 模式 launch=herdr" || fail "dry herdr: $out"
+out="$(hh claude --dry-run --no-herdr)"; has "$out" '"launch": "terminal"' && has "$out" '"HH_VIEWER": "none"' && pass "--no-herdr → 当前终端，且 worker 不开窗口（HH_VIEWER=none）" || fail "dry no-herdr: $out"
+out="$(HERDR_ENV=1 HERDR_PANE_ID=w1:p1 hh claude --dry-run)"; has "$out" '"launch": "pane"' && pass "已在 herdr pane 里 → 原地启动" || fail "dry pane: $out"
+out="$(HH_VIEWER=none hh claude --dry-run)"; has "$out" '"launch": "terminal"' && pass "HH_VIEWER=none → 终端" || fail "dry viewer env: $out"
+out="$(hh claude --dry-run pa)"; has "$out" '"launch": "terminal"' && pass "普通模式默认当前终端" || fail "dry plain: $out"
+out="$(hh claude --dry-run --herdr pa)"; has "$out" '"launch": "herdr"' && has "$out" '"herdr_argv": [' && pass "--herdr 普通模式也进 herdr" || fail "dry herdr plain: $out"
+out="$(PATH="$here/bin:$(dirname "$(command -v node)"):/usr/bin:/bin" hh claude --dry-run)"; has "$out" '"launch": "terminal"' && has "$out" 'herdr 未安装' && has "$out" 'hh install herdr' && pass "没装 herdr → 终端 + 安装提示" || fail "dry no herdr: $out"
+out="$(PATH="$here/bin:$(dirname "$(command -v node)"):/usr/bin:/bin" hh claude --dry-run --herdr 2>&1 || true)"; has "$out" 'herdr 未安装' && pass "--herdr 但没装 → 报错" || fail "force herdr: $out"
+out="$(hh viewer none --json)"; has "$out" '"viewer": "none"' && [ "$(hh claude --dry-run | jget launch)" = "terminal" ] && pass "hh viewer none → Leader 也留在终端" || fail "viewer none: $out"
+out="$(hh viewer bogus 2>&1 || true)"; has "$out" 'auto|herdr|none' && pass "hh viewer 校验" || fail "viewer bad: $out"
+hh viewer auto >/dev/null
+out="$(hh install nope 2>&1 || true)"; has "$out" 'claude|herdr' && pass "hh install 只认 claude|herdr" || fail "install nope: $out"
+out="$(hh install herdr --yes)"; has "$out" '"already": true' && pass "hh install herdr：已装就不重装" || fail "install herdr: $out"
+out="$(PATH="$here/bin:$(dirname "$(command -v node)"):/usr/bin:/bin" hh install herdr)"; has "$out" '"ran": false' && has "$out" 'install.sh' && pass "非 TTY 不带 --yes 只打印安装命令" || fail "install print: $out"
 out="$(hh claude --dry-run)"; has "$out" '"leader": true' && has "$out" '--append-system-prompt' && has "$out" 'herdr-hybrid Leader 模式' && has "$out" '先三问' && pass "Leader 模式注入协议（原则，不是对照表）" || fail "leader dry: $out"
 out="$(hh claude --dry-run pa --foo)"; has "$out" '"leader": false' && ! has "$out" 'append-system-prompt' && has "$out" '"--foo"' && has "$out" 'sk-a***90' && pass "普通模式不注入协议、参数透传、env 打码" || fail "plain dry: $out"
 out="$(hh claude --leader pa --dry-run)"; has "$out" '"leader": true' && has "$out" '"profile": "pa"' && pass "--leader 指定 profile" || fail "leader pa: $out"

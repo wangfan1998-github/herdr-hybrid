@@ -8,6 +8,8 @@
 - `hh profiles import-ccm`、`hh init` 对 `~/.config/ccm/*.conf` 的自动导入、`HH_CCM_DIR`。ccm 是这个仓库 0.x 时期自己的 bash 启动器，1.0 起没有人再需要从它迁移；配置早已在 `config.json` 里。
 
 ### 新
+- `hh claude` 默认开进 herdr：装了 herdr 就在工作区里开一个聚焦的 `hh:leader` tab 跑 Leader，server 没起自动 `herdr server` 拉起，终端里顺手附着客户端；已经在 herdr pane 里就原地启动；没装回退当前终端并提示。`--no-herdr` 留在终端且给 Leader 设 `HH_VIEWER=none` 让 worker 也不开窗口；`--herdr` 让普通模式也进 herdr；`hh viewer auto|herdr|none` 改默认；`hh claude --dry-run` 多一行 `launch`。
+- `hh install claude|herdr`：官方安装脚本装缺的依赖（TTY 先确认，`--yes` 跳过）；`install.sh` 缺依赖时会问（`HH_INSTALL_DEPS=yes|no` 跳过询问）；`hh doctor` 的提示指向它。
 - `hh setup`：一问一答加一个端点 + profile（地址、鉴权、密钥不回显、模型），问它当 Leader 还是干活，顺手真发一次 pong。`hh init` 在 TTY 里没找到任何端点时自动进入（`--no-setup` 关闭）；非 TTY 打印等价命令。
 - `hh claude` Leader 模式在只有 `official` 一个 profile、或所有角色都指向 Leader 自己时，stderr 提醒一句（照常启动）。
 - `hh doctor` 无端点时的提示指向 `hh setup`。

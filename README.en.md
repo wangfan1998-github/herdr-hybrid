@@ -64,6 +64,7 @@ Headless processes are invisible. [herdr](https://herdr.dev) adds the window and
 - **One tab per worker** with the transcript scrolling live: which files it reads, which tools it calls, where it is stuck. Created with `--no-focus`, so your cursor stays put.
 - **The workspace is the dashboard.** Tab 1 is the Leader; the rest are opened and closed by the Leader (`hh close`).
 - **State never goes through the window.** Completion is decided by `result.json` and the process. Close a tab and nothing is lost; without herdr everything still runs, just unwatched.
+- **Zero setup.** `hh claude` opens the Leader in a new herdr tab by default, starts the server if needed, and runs in place when you are already inside herdr. Without herdr it falls back to the current terminal and suggests `hh install herdr`. Opt out per launch with `hh claude --no-herdr`, or permanently with `hh viewer none`.
 
 <p align="center"><picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/herdr-dark.png">
@@ -76,11 +77,11 @@ Three words: a **gateway** is an API URL plus its secret, stored once; a **profi
 
 <p align="center"><img src="docs/assets/config-model.png" alt="config model: gateways hold secrets → profiles reference a gateway and pin a model → roles reference a profile and set autonomy → leader points at one profile; env layering order at the bottom" width="100%"></p>
 
-Requires Node ≥ 18 and Claude Code. herdr is optional.
+The only hard requirement is Node ≥ 18. If Claude Code or herdr is missing, `install.sh` offers to install them with the official scripts (herdr is optional; `hh install herdr` any time).
 
 ```bash
 git clone https://github.com/wangfan1998-github/herdr-hybrid.git && cd herdr-hybrid
-./install.sh                                # hh → ~/.local/bin, Leader skill → ~/.claude/skills, runs hh init
+./install.sh                                # hh → ~/.local/bin, Leader skill → ~/.claude/skills, offers Claude Code / herdr, runs hh init
 ```
 
 **First configuration.** When `hh init` finds no endpoint it drops into `hh setup` (also runnable any time): a short Q&A adds one endpoint, asks whether it leads or works, and sends a real `pong` to check connectivity. Run it once per endpoint. The non-interactive equivalent:
@@ -100,7 +101,8 @@ hh roles set coder --profile fast           # cheap and fast does the work
 hh roles set reviewer --profile official    # the writer is never the reviewer
 hh leader smart                             # your smartest profile leads
 hh doctor --net                             # real round trip for every profile a role uses
-hh claude                                   # start the Leader (in a herdr tab if you want worker windows), then describe the task
+hh claude                                   # start the Leader: with herdr installed it opens in a new herdr tab, one tab per worker
+hh claude --no-herdr                        # no windows: Leader stays in this terminal, workers run in the background
 ```
 
 > **Default permissions**: `hh claude` passes `--dangerously-skip-permissions`, and the `full` autonomy of coder / executor maps to `--permission-mode bypassPermissions`. Workers get your full local rights; dispatch only into directories you trust, and tighten via `claude.interactiveArgs` and each role's `autonomy` (`workspace` / `readonly`).

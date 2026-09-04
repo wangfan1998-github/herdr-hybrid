@@ -56,7 +56,7 @@ $ claude -p --output-format stream-json --verbose --permission-mode bypassPermis
 - `hh close <id>` 收回 tab；`hh view <id>` 给后台 run 补开一个 `tail -f` 窗口。
 - 不想开窗口：`--view none` 或 `config.viewer = "none"`。
 
-推荐布局：tab 1 是 Leader（`hh claude <最聪明的 profile>`），其余 tab 由 hh 创建和回收；想看细节点进去即可，不要在里面输入。
+布局不用手排：`hh claude` 自己开一个聚焦的 `hh:leader` tab（已经在 herdr 里就原地用当前 pane），其余 tab 由 hh 创建和回收；想看细节点进去即可，不要在里面输入。`hh claude --no-herdr` 或 `hh viewer none` 关掉窗口。
 
 ## 事件流
 

@@ -41,7 +41,7 @@
 | 字段 | 说明 |
 | --- | --- |
 | `leader` | 你通常用哪个 profile 当 Leader（`hh leader <profile>` 改）；`hh doctor --net` 会顺带测它 |
-| `viewer` | `auto`（herdr 在运行就开 tab，否则后台）· `herdr`（必须开 tab，失败回退后台）· `none`（总是后台） |
+| `viewer` | Leader 和 worker 用不用 herdr 窗口。`auto`（默认：装了 herdr 就用，`hh claude` 开在新 tab、worker 各一个 tab；server 没起自动拉起；没装则终端 / 后台）· `herdr`（必须，没装报错）· `none`（从不）。`hh viewer <v>` 改；单次 `hh claude --no-herdr` / `hh dispatch --view none`；环境变量 `HH_VIEWER` 覆盖 |
 | `workspace` | herdr 工作区 id，默认 `w1` |
 | `footer` | 拼在每个任务文件末尾的「完成要求」，默认要求 worker 在回复末尾附一个 JSON 报告（`status / summary / changed / commits / verified / assumptions / blockers`），hh 解析进 `result.report`。改了它记得保留 json 块的要求，否则 `report` 为空 |
 | `claude.bin` | `claude` 可执行文件；profile 可单独覆盖 |
