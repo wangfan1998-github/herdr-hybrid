@@ -64,7 +64,7 @@ Headless processes are invisible. [herdr](https://herdr.dev) adds the window and
 - **One tab per worker** with the transcript scrolling live: which files it reads, which tools it calls, where it is stuck. Created with `--no-focus`, so your cursor stays put.
 - **The workspace is the dashboard.** Tab 1 is the Leader; the rest are opened and closed by the Leader (`hh close`).
 - **State never goes through the window.** Completion is decided by `result.json` and the process. Close a tab and nothing is lost; without herdr everything still runs, just unwatched.
-- **Zero setup.** `hh claude` opens the Leader in a new herdr tab by default, starts the server if needed, and runs in place when you are already inside herdr. Without herdr it falls back to the current terminal and suggests `hh install herdr`. Opt out per launch with `hh claude --no-herdr`, or permanently with `hh viewer none`.
+- **Zero setup.** `hh claude` opens the Leader in a new herdr tab by default, starts the server if needed, and runs in place when you are already inside herdr. If herdr is not installed it asks "install it and open the Leader there?"; Enter runs the official installer and continues (same for a missing Claude Code). Opt out per launch with `hh claude --no-herdr`, or permanently with `hh viewer none`.
 
 <p align="center"><picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/herdr-dark.png">

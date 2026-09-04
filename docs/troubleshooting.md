@@ -24,7 +24,7 @@
 
 ## herdr 相关
 
-**`hh claude` 没有开进 herdr**：`hh claude --dry-run` 的 `launch` 行说明原因。`terminal` 加「herdr 未安装」→ `hh install herdr`；`terminal` 加「viewer = none」→ `hh viewer auto`；`pane` 表示你已经在 herdr 的 pane 里，原地启动不再开 tab，派出的 worker 照样各开一个 tab。
+**`hh claude` 没有开进 herdr**：`hh claude --dry-run` 的 `launch` 行说明原因。`terminal` 加「herdr 未安装」→ 终端里 `hh claude` 会问你要不要装，回车即装；非 TTY 不代跑安装脚本，手动 `hh install herdr`；`terminal` 加「viewer = none」→ `hh viewer auto`；`pane` 表示你已经在 herdr 的 pane 里，原地启动不再开 tab，派出的 worker 照样各开一个 tab。
 
 **开了 tab 但终端没跳进 herdr**：只有 stdin 和 stdout 都是 TTY 才会附着客户端；在 Agent 的 shell 里只建 tab 并返回 JSON，自己打开 herdr 即可看到 `hh:leader` tab。
 

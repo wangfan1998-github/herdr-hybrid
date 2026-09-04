@@ -82,7 +82,7 @@ Leader 靠原则工作，不靠关键词：启动时把当前真实的角色表�
 - **每个 worker 一个 tab**，transcript 实时滚动：它在读什么文件、调什么工具、卡在哪。`--no-focus` 创建，不抢你的光标。
 - **工作区就是看板**。tab 1 是 Leader，其余 tab 由 Leader 建、由 Leader 收（`hh close`）。想看细节点进去，不用在里面输入。
 - **状态从不经过窗口**。完成与否只看 `result.json` 和进程；关掉 tab 活不丢，没装 herdr 一切照跑，只是没有窗口。`hh view` 随时给后台 run 补开一个。
-- **不用配**。`hh claude` 默认就把 Leader 开进 herdr 的新 tab，server 没起会自动拉起，已经在 herdr 里就原地启动；没装 herdr 回退当前终端并提示 `hh install herdr`。不想要窗口：单次 `hh claude --no-herdr`，或 `hh viewer none` 永久关掉。
+- **不用配**。`hh claude` 默认就把 Leader 开进 herdr 的新 tab，server 没起会自动拉起，已经在 herdr 里就原地启动；没装 herdr 会问一句「装上并开进去？」，回车就用官方脚本装好接着开（Claude Code 没装同理）。不想要窗口：单次 `hh claude --no-herdr`，或 `hh viewer none` 永久关掉、不再问。
 
 <p align="center">
   <picture>

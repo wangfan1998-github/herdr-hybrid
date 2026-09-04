@@ -162,7 +162,11 @@ err="$(hh result "$idn" | jget run.error)"; has "$err" 'API Error: 401' && ! has
 out="$(hh dispatch --bogus 2>&1 || true)"; has "$out" '未知参数' && pass "未知参数报错" || fail "bogus: $out"
 out="$(HH_CONFIG_DIR=$T/none hh roles 2>&1 || true)"; has "$out" 'hh init' && pass "无配置提示 hh init" || fail "no config: $out"
 out="$(hh claude --help 2>&1)"; has "$out" '用法' && pass "hh claude --help 给用法" || fail "claude usage: $out"
+hh profiles set ph --bin "$FAKE" >/dev/null   # CI 没有真 claude：启动前会检查可执行文件
 out="$(hh claude --version 2>&1 || true)"; has "$out" 'Leader 模式' && has "$out" 'profile ph' && has "$out" '"launch": "herdr"' && pass "hh claude 不带 profile = leader 模式，默认开进 herdr" || fail "claude leader: $out"
+hh profiles set nobin --gateway gwa --model m --bin /nonexistent/claude >/dev/null
+out="$(hh claude nobin --no-herdr 2>&1 || true)"; has "$out" '找不到 /nonexistent/claude' && has "$out" 'hh install claude' && pass "claude 可执行文件不存在 → 启动前报错并指向 hh install claude" || fail "no claude bin: $out"
+hh profiles rm nobin >/dev/null
 grep -q 'tab create --workspace w1' "$FAKE_HERDR_LOG" && grep -q 'claude --no-herdr --leader ph --version' "$FAKE_HERDR_LOG" && ! grep -q -- '--no-focus.*hh:leader\|hh:leader.*--no-focus' "$FAKE_HERDR_LOG" && pass "herdr：建聚焦 tab，pane 里跑 hh claude --no-herdr --leader ph（参数透传）" || fail "herdr log: $(cat "$FAKE_HERDR_LOG")"
 : > "$FAKE_HERDR_LOG"
 out="$(hh claude --dry-run)"; has "$out" '"launch": "herdr"' && pass "dry-run: Leader 模式 launch=herdr" || fail "dry herdr: $out"
