@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 渲染 README 图片：src/*.svg → ../*.png（2x，浅色）；src/*.html → ../*-{light,dark}.png（2x）；src/showcase.html → ../showcase.gif
+# 渲染 README 图片：src/*.html → ../*-{light,dark}.png（2x）；src/showcase.html → ../showcase.gif
 # 依赖：Chrome/Chromium（CHROME 环境变量可覆盖路径）、ffmpeg（只有 GIF 需要）
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,13 +10,7 @@ C="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 
 render(){ "$C" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size="$3" --screenshot="$2" "$1" >/dev/null 2>&1; }
 
-# SVG 图（hero / architecture / config-model）：源文件就是 svg，直接截图成 2x PNG，只有浅色版
-for spec in hero:1400,720 architecture:1400,820 config-model:1400,760; do
-  n="${spec%%:*}"; size="${spec##*:}"
-  render "file://$here/$n.svg" "$out/$n.png" "$size"; echo "  $n.png"
-done
-
-for spec in banner:1500,420 herdr:1500,480; do
+for spec in banner:1500,420 architecture:1500,600 loop:1500,360 herdr:1500,480; do
   n="${spec%%:*}"; size="${spec##*:}"
   for t in light dark; do render "file://$here/$n.html?theme=$t" "$out/$n-$t.png" "$size"; echo "  $n-$t.png"; done
 done

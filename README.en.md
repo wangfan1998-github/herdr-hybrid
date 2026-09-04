@@ -27,8 +27,6 @@
 
 If you hold several subscriptions, API keys or gateways, this is probably how you use Claude Code today:
 
-<p align="center"><img src="docs/assets/hero.png" alt="before: endpoints scattered across aliases, one model doing everything in sequence; with hh: one config.json, a Leader that decomposes and verifies, coder / reviewer / researcher in parallel on different models" width="100%"></p>
-
 | Before | With hh |
 | --- | --- |
 | **Endpoints scattered across aliases**: `fastcc`, `smartcc`, `geminicc`… each a hand-copied URL, secret and model; nothing can script or orchestrate them | **One `config.json`**: endpoint, secret and model written once; `hh claude fast` to launch, `hh dispatch -p fast` to delegate; old aliases import in one step |
@@ -41,7 +39,10 @@ Still Claude Code, no new toolchain: the Leader is an interactive Claude Code se
 
 ## How it works
 
-<p align="center"><img src="docs/assets/architecture.png" alt="architecture: you → Leader (interactive Claude Code) → hh command bus → four headless claude -p workers → state files; herdr is an optional viewer" width="100%"></p>
+<p align="center"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.png">
+    <img src="docs/assets/architecture-light.png" alt="architecture" width="100%">
+  </picture></p>
 
 hh never calls a model API. It does three things: translate a profile into environment variables and `claude` arguments; launch Claude Code with them, interactive for the Leader and headless for workers; translate each worker's event stream back into a readable transcript and a machine-readable `result.json`. State lives only in files: one directory per run, and completion is decided by `result.json` and whether the process is alive.
 
@@ -76,7 +77,6 @@ Headless processes are invisible. [herdr](https://herdr.dev) adds the window and
 
 Three words: a **gateway** is an API URL plus its secret, stored once; a **profile** is gateway + model, and `hh claude <profile>` launches Claude Code with it; a **role** is a job for the Leader to hand out, pointing at a profile. `official` is the built-in profile meaning "whatever `claude` is logged in as".
 
-<p align="center"><img src="docs/assets/config-model.png" alt="config model: gateways hold secrets → profiles reference a gateway and pin a model → roles reference a profile and set autonomy → leader points at one profile; env layering order at the bottom" width="100%"></p>
 
 The only hard requirement is Node ≥ 18. If Claude Code or herdr is missing, `install.sh` offers to install them with the official scripts (herdr is optional; `hh install herdr` any time).
 
@@ -110,35 +110,14 @@ hh claude herdr                             # open the Leader itself in a new he
 
 > **Default permissions**: `hh claude` passes `--dangerously-skip-permissions`, and the `full` autonomy of coder / executor maps to `--permission-mode bypassPermissions`. Workers get your full local rights; dispatch only into directories you trust, and tighten via `claude.interactiveArgs` and each role's `autonomy` (`workspace` / `readonly`).
 
+<p align="center"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/loop-dark.png">
+    <img src="docs/assets/loop-light.png" alt="Leader loop" width="100%">
+  </picture></p>
+
 ## Showcase
 
-One request, end to end, inside the Leader session: decompose → two coders in parallel → wait → re-run verification → review by a different model → follow-up in the same session → report. You only see the report.
-
-```mermaid
-sequenceDiagram
-    participant U as you
-    participant L as Leader (smart)
-    participant H as hh
-    participant C as coder (fast) × 2
-    participant R as reviewer (official)
-    U->>L: add CSV export to the order list, frontend and backend, then get it reviewed
-    L->>L: three questions: what changes / what capability / how to prove it is done
-    L->>H: hh dispatch -r coder -l export-be -d ~/repo/be
-    L->>H: hh dispatch -r coder -l export-fe -d ~/repo/fe
-    H->>C: claude -p (own session, directory, permissions)
-    L->>H: hh wait export-be export-fe --timeout 540
-    C-->>H: result.json (JSON report at the end)
-    H-->>L: settled
-    L->>L: re-run go test / npm run build / git log itself
-    L->>H: hh dispatch -r reviewer (read-only)
-    H->>R: claude -p --permission-mode default
-    R-->>L: findings, ranked by severity
-    L->>H: hh send export-be -t "fix what the reviewer found …"
-    C-->>L: resumes the same session, reports again
-    L-->>U: report: subtasks, status, artifacts, verification, leftovers
-```
-
-The same loop as it actually looks in the Leader tab:
+One full loop as seen from the Leader tab (decompose → two coders in parallel → wait → re-run verification → review by a different model → follow-up in the same session → report):
 
 <p align="center"><img src="docs/assets/showcase.gif" alt="Leader loop demo" width="100%"></p>
 

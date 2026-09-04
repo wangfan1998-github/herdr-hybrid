@@ -45,7 +45,7 @@ CI（`.github/workflows/ci.yml`）跑 Node 18/20/22 的 check + smoke + shellche
 
 ## 图片资产
 
-`docs/assets/src/*.html` + `theme.css` 是源文件（HTML/CSS 排版，`?theme=light|dark` 切主题）；README 用 `<picture>` 引用渲染好的 `docs/assets/<name>-{light,dark}.png`，GitHub 按读者主题自动切换；`showcase.gif` 只有深色版；`hero` / `architecture` / `config-model` 三张的源是 `src/*.svg`，只渲染一张浅色 PNG，README 用 `<img>` 引用。不要直接引用 SVG/HTML（GitHub 不加载外部字体，中文会变方块）。改完源文件：
+`docs/assets/src/*.html` + `theme.css` 是源文件（HTML/CSS 排版，`?theme=light|dark` 切主题）；README 用 `<picture>` 引用渲染好的 `docs/assets/<name>-{light,dark}.png`，GitHub 按读者主题自动切换；`showcase.gif` 只有深色版。不要直接引用 SVG/HTML（GitHub 不加载外部字体，中文会变方块）。改完源文件：
 
 ```bash
 docs/assets/src/render.sh      # 需要 Chrome（CHROME= 可指定路径）和 ffmpeg（GIF）；输出 2x PNG + GIF
