@@ -25,6 +25,7 @@
 
 <p align="center">
   <a href="#为什么混动">为什么混动</a> ·
+  <a href="#它是怎么工作的">怎么工作</a> ·
   <a href="#加上-herdr看得见的团队">加上 herdr</a> ·
   <a href="#上手">上手</a> ·
   <a href="#跑起来是什么样">Showcase</a> ·
@@ -39,6 +40,10 @@
 
 手里有几家订阅、API key 或网关的人，大多是这么用 Claude Code 的：
 
+<p align="center">
+  <img src="docs/assets/hero.png" alt="以前：端点散在一堆 alias 里，同一个模型串行做所有事；现在用 hh：一份 config.json，Leader 拆解验收，coder / reviewer / researcher 并行且不是同一个模型" width="100%">
+</p>
+
 | 以前 | 现在用 hh |
 | --- | --- |
 | **端点散在一堆 alias 里**：`fastcc` `smartcc` `geminicc`……每条手抄一遍地址、密钥、模型，脚本读不到，编排不了 | **一份 `config.json`**：端点、密钥、模型各写一次；`hh claude fast` 启动，`hh dispatch -p fast` 派发；旧 alias 一键导入 |
@@ -49,12 +54,13 @@
 
 还是 Claude Code，不换工具链：Leader 是一个交互式 Claude Code，worker 是一批 `claude -p` 无头进程，各自带着自己 profile 的端点和模型。
 
+## 它是怎么工作的
+
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.png">
-    <img src="docs/assets/architecture-light.png" alt="架构：Leader 拆解派发，worker 并行实现，herdr 每个 worker 一个窗口" width="100%">
-  </picture>
+  <img src="docs/assets/architecture.png" alt="架构：你 → Leader（交互式 Claude Code）→ hh 命令总线 → 四个 claude -p 无头 worker → 状态文件；herdr 是可选观察窗口" width="100%">
 </p>
+
+hh 不调用任何模型 API，它只做三件事：把 profile 翻译成一组环境变量和 `claude` 的参数；用这组变量启动 Claude Code，交互式的当 Leader，无头的当 worker；把 worker 的事件流翻译回一份人能读的 transcript 和一份机器能读的 `result.json`。状态只来自文件：每个 run 一个目录，完成与否只看 `result.json` 和进程是否活着。
 
 Leader 靠原则工作，不靠关键词：启动时把当前真实的角色表（谁擅长什么）和 profile 清单注入 prompt，它按「这件事改变什么 / 需要什么能力 / 怎么证明做完了」三问决定派给谁、给多大权限、怎么验收。worker 结束时按契约交一份 JSON 报告（改了什么、跑了什么验收、有什么假设），Leader 拿数据核对，返修直接接着同一会话继续。
 
@@ -87,6 +93,10 @@ Leader 靠原则工作，不靠关键词：启动时把当前真实的角色表�
 ## 上手
 
 三个词就够了：**端点**（gateway）= 一个 API 地址加它的密钥，只存一次；**profile** = 端点 + 模型，`hh claude <profile>` 就用它启动 Claude Code；**角色**（role）= 给 Leader 用的分工，每个角色指向一个 profile。`official` 是内置 profile，表示 `claude` 自己的登录。
+
+<p align="center">
+  <img src="docs/assets/config-model.png" alt="配置模型：端点存密钥 → profile 引用端点并绑定模型 → 角色引用 profile 并限定自主级别 → leader 指向一个 profile；底部是环境变量叠加顺序" width="100%">
+</p>
 
 依赖：Node ≥ 18（Claude Code 本身就需要）、Claude Code。herdr 可选。
 
@@ -142,16 +152,35 @@ hh claude                                   # 启动 Leader（在 herdr 的一�
 
 > **默认权限**：`hh claude` 带 `--dangerously-skip-permissions`；coder / executor 的 `full` 自主级别 = `--permission-mode bypassPermissions`。也就是 worker 拥有你账号的全部本地权限，只在信任的目录里派。要收紧改 `claude.interactiveArgs` 和角色的 `autonomy`（`workspace` / `readonly`）。
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/loop-dark.png">
-    <img src="docs/assets/loop-light.png" alt="Leader 闭环：拆解、派发、等待、验收、review、返修、汇报" width="100%">
-  </picture>
-</p>
-
 ## 跑起来是什么样
 
-一次完整闭环在 Leader tab 里的样子（拆解 → 两个 coder 并行 → 等待 → 自己复跑验收 → 另一个模型 review → 同会话返修 → 汇报）：
+一个需求在 Leader 会话里走完的全过程：拆解 → 两个 coder 并行 → 等待 → 自己复跑验收 → 另一个模型 review → 同会话返修 → 汇报。用户只在最后看汇报，中途不会被问。
+
+```mermaid
+sequenceDiagram
+    participant U as 你
+    participant L as Leader（smart）
+    participant H as hh
+    participant C as coder（fast）× 2
+    participant R as reviewer（official）
+    U->>L: 订单列表加导出 CSV，前后端都要，做完让人审
+    L->>L: 三问：改什么 / 要什么能力 / 怎么证明做完
+    L->>H: hh dispatch -r coder -l export-be -d ~/repo/be
+    L->>H: hh dispatch -r coder -l export-fe -d ~/repo/fe
+    H->>C: claude -p（独立会话、目录、权限）
+    L->>H: hh wait export-be export-fe --timeout 540
+    C-->>H: result.json（末尾 JSON 报告）
+    H-->>L: settled
+    L->>L: 自己复跑 go test / npm run build / git log
+    L->>H: hh dispatch -r reviewer（只读）
+    H->>R: claude -p --permission-mode default
+    R-->>L: 问题表（严重度分级）
+    L->>H: hh send export-be -t "修复 reviewer 指出的 …"
+    C-->>L: 同一会话续做，再交报告
+    L-->>U: 中文汇报：子任务、状态、产出、验收结果、遗留
+```
+
+同一个闭环在 Leader tab 里实际的样子：
 
 <p align="center">
   <img src="docs/assets/showcase.gif" alt="Leader 闭环演示：dispatch、wait、result、reviewer、send、汇报" width="100%">

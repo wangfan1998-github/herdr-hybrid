@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 720" width="1400" height="720" font-family="Noto Sans SC, PingFang SC, sans-serif">
+  <defs>
+    <linearGradient id="gLeader" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1E5BC6"/>
+      <stop offset="1" stop-color="#2BB3A0"/>
+    </linearGradient>
+    <linearGradient id="gArrow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8C8377"/>
+      <stop offset="1" stop-color="#2F6FDB"/>
+    </linearGradient>
+    <linearGradient id="gTerm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3F3B37"/>
+      <stop offset="1" stop-color="#2E2B28"/>
+    </linearGradient>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1F3A4A" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1400" height="720" fill="#FBFBF9"/>
+
+  <!-- title -->
+  <text x="700" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#1F2A33">以前 vs 现在用 hh</text>
+
+  <!-- ================= LEFT: 以前 ================= -->
+  <g id="before">
+    <rect x="30" y="70" width="600" height="570" rx="18" fill="#EFEBE4" stroke="#D9D2C7" stroke-width="1.5"/>
+    <rect x="50" y="84" width="64" height="26" rx="13" fill="#8C8377"/>
+    <text x="82" y="102" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">以前</text>
+
+    <!-- terminal window -->
+    <g filter="url(#sh)">
+      <rect x="55" y="124" width="380" height="150" rx="10" fill="url(#gTerm)"/>
+    </g>
+    <rect x="55" y="124" width="380" height="26" rx="10" fill="#4A4642"/>
+    <rect x="55" y="138" width="380" height="12" fill="#4A4642"/>
+    <circle cx="72" cy="137" r="5" fill="#C9A08A"/>
+    <circle cx="90" cy="137" r="5" fill="#C9B98A"/>
+    <circle cx="108" cy="137" r="5" fill="#A9B98A"/>
+    <text x="245" y="141" text-anchor="middle" font-size="11" fill="#B5ADA3">~/.zshrc</text>
+    <text x="70" y="174" font-size="12" fill="#E8E2D8">alias fastcc="ANTHROPIC_BASE_URL=… claude"</text>
+    <text x="70" y="209" font-size="12" fill="#E8E2D8">alias smartcc="ANTHROPIC_BASE_URL=… claude"</text>
+    <text x="70" y="244" font-size="12" fill="#E8E2D8">alias geminicc="ANTHROPIC_BASE_URL=… claude"</text>
+
+    <!-- endpoint cards -->
+    <rect x="500" y="140" width="110" height="40" rx="8" fill="#E3DCD2" stroke="#B8AE9F" stroke-width="1.5"/>
+    <text x="555" y="165" text-anchor="middle" font-size="13" fill="#5B534A">relay</text>
+    <rect x="500" y="200" width="110" height="40" rx="8" fill="#E3DCD2" stroke="#B8AE9F" stroke-width="1.5"/>
+    <text x="555" y="225" text-anchor="middle" font-size="13" fill="#5B534A">official</text>
+    <rect x="500" y="260" width="110" height="40" rx="8" fill="#E3DCD2" stroke="#B8AE9F" stroke-width="1.5"/>
+    <text x="555" y="285" text-anchor="middle" font-size="13" fill="#5B534A">gemini-gw</text>
+
+    <!-- messy wires -->
+    <polyline points="435,174 465,174 465,280 500,280" fill="none" stroke="#A08C78" stroke-width="2" stroke-dasharray="6,4"/>
+    <polygon points="492,276 500,280 492,284" fill="#A08C78"/>
+    <polyline points="435,209 450,209 450,160 500,160" fill="none" stroke="#8C8C8C" stroke-width="2"/>
+    <polygon points="492,156 500,160 492,164" fill="#8C8C8C"/>
+    <polyline points="435,244 480,244 480,220 500,220" fill="none" stroke="#B09A80" stroke-width="2" stroke-dasharray="2,3"/>
+    <polygon points="492,216 500,220 492,224" fill="#B09A80"/>
+    <text x="440" y="322" font-size="11" fill="#9A8E80">手动 export / 切 alias</text>
+
+    <line x1="55" y1="345" x2="605" y2="345" stroke="#D9D2C7" stroke-width="1.5" stroke-dasharray="6,5"/>
+
+    <!-- lonely Claude Code icon -->
+    <g filter="url(#sh)">
+      <rect x="70" y="370" width="64" height="64" rx="14" fill="#B8AFA2"/>
+    </g>
+    <text x="102" y="411" text-anchor="middle" font-size="24" font-weight="700" fill="#FBF8F3">&gt;_</text>
+    <text x="102" y="456" text-anchor="middle" font-size="12" fill="#6B6259">Claude Code</text>
+    <text x="102" y="472" text-anchor="middle" font-size="11" fill="#9A8E80">一个进程</text>
+
+    <!-- serial steps -->
+    <line x1="134" y1="402" x2="172" y2="402" stroke="#A69C90" stroke-width="2"/>
+    <polygon points="172,398 180,402 172,406" fill="#A69C90"/>
+    <rect x="180" y="378" width="115" height="48" rx="8" fill="#E6E0D6" stroke="#B8AE9F" stroke-width="1.5"/>
+    <circle cx="188" cy="380" r="9" fill="#8C8377"/>
+    <text x="188" y="384" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">1</text>
+    <text x="237" y="407" text-anchor="middle" font-size="14" fill="#5B534A">写代码</text>
+    <line x1="295" y1="402" x2="312" y2="402" stroke="#A69C90" stroke-width="2"/>
+    <polygon points="312,398 320,402 312,406" fill="#A69C90"/>
+    <rect x="320" y="378" width="115" height="48" rx="8" fill="#E6E0D6" stroke="#B8AE9F" stroke-width="1.5"/>
+    <circle cx="328" cy="380" r="9" fill="#8C8377"/>
+    <text x="328" y="384" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">2</text>
+    <text x="377" y="407" text-anchor="middle" font-size="14" fill="#5B534A">审代码</text>
+    <line x1="435" y1="402" x2="452" y2="402" stroke="#A69C90" stroke-width="2"/>
+    <polygon points="452,398 460,402 452,406" fill="#A69C90"/>
+    <rect x="460" y="378" width="115" height="48" rx="8" fill="#E6E0D6" stroke="#B8AE9F" stroke-width="1.5"/>
+    <circle cx="468" cy="380" r="9" fill="#8C8377"/>
+    <text x="468" y="384" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">3</text>
+    <text x="517" y="407" text-anchor="middle" font-size="14" fill="#5B534A">查资料</text>
+    <text x="377" y="456" text-anchor="middle" font-size="13" fill="#7A7168">同一个模型，一次一件事</text>
+
+    <!-- pain list -->
+    <g stroke="#B5766A" stroke-width="2.2" stroke-linecap="round">
+      <line x1="76" y1="516" x2="86" y2="526"/><line x1="86" y1="516" x2="76" y2="526"/>
+      <line x1="76" y1="550" x2="86" y2="560"/><line x1="86" y1="550" x2="76" y2="560"/>
+      <line x1="76" y1="584" x2="86" y2="594"/><line x1="86" y1="584" x2="76" y2="594"/>
+    </g>
+    <text x="100" y="526" font-size="13" fill="#6B6259">端点、key、模型散落在 alias / env 里</text>
+    <text x="100" y="560" font-size="13" fill="#6B6259">换模型 = 手改环境变量，容易串</text>
+    <text x="100" y="594" font-size="13" fill="#6B6259">一次只有一个模型在干活</text>
+  </g>
+
+  <!-- ================= MIDDLE: hh arrow ================= -->
+  <g id="arrow">
+    <polygon points="648,330 722,330 722,300 768,360 722,420 722,390 648,390" fill="url(#gArrow)"/>
+    <text x="695" y="371" text-anchor="middle" font-size="30" font-weight="700" fill="#FFFFFF">hh</text>
+    <text x="708" y="450" text-anchor="middle" font-size="12" fill="#4A7A88">herdr-hybrid</text>
+  </g>
+
+  <!-- ================= RIGHT: 现在用 hh ================= -->
+  <g id="after">
+    <rect x="770" y="70" width="600" height="570" rx="18" fill="#EEF6F8" stroke="#BFDDE3" stroke-width="1.5"/>
+    <rect x="790" y="84" width="112" height="26" rx="13" fill="#2F6FDB"/>
+    <text x="846" y="102" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">现在用 hh</text>
+
+    <!-- config.json -->
+    <g filter="url(#sh)">
+      <rect x="920" y="118" width="300" height="62" rx="10" fill="#FFFFFF" stroke="#5AA9B8" stroke-width="1.5"/>
+    </g>
+    <polygon points="936,132 950,132 956,138 956,166 936,166" fill="#DCEBF0" stroke="#5AA9B8" stroke-width="1.2"/>
+    <text x="968" y="143" font-size="15" font-weight="700" fill="#1F3A4A">config.json</text>
+    <text x="968" y="165" font-size="12.5" fill="#4A6470">端点 · profile · 角色，各写一次</text>
+
+    <line x1="1070" y1="180" x2="1070" y2="194" stroke="#5AA9B8" stroke-width="2"/>
+    <polygon points="1066,192 1070,200 1074,192" fill="#5AA9B8"/>
+
+    <!-- Leader with halo -->
+    <rect x="944" y="200" width="252" height="92" rx="22" fill="none" stroke="#A9DCE6" stroke-width="2" opacity="0.45"/>
+    <rect x="952" y="208" width="236" height="76" rx="18" fill="none" stroke="#7FC8D8" stroke-width="2.5" opacity="0.65"/>
+    <g filter="url(#sh)">
+      <rect x="960" y="216" width="220" height="60" rx="14" fill="url(#gLeader)"/>
+    </g>
+    <text x="1070" y="241" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">Leader · smart</text>
+    <text x="1070" y="264" text-anchor="middle" font-size="12" fill="#FFFFFF" opacity="0.92">拆解 · 验收 · 汇报</text>
+
+    <!-- dispatch bus -->
+    <line x1="1070" y1="292" x2="1070" y2="312" stroke="#2F6FDB" stroke-width="2"/>
+    <text x="1080" y="306" font-size="11" fill="#4A7A88">hh dispatch</text>
+    <line x1="851" y1="312" x2="1289" y2="312" stroke="#3FB7A6" stroke-width="2"/>
+    <line x1="851" y1="312" x2="851" y2="336" stroke="#3FB7A6" stroke-width="2"/>
+    <polygon points="847,334 851,342 855,334" fill="#3FB7A6"/>
+    <line x1="997" y1="312" x2="997" y2="336" stroke="#3FB7A6" stroke-width="2"/>
+    <polygon points="993,334 997,342 1001,334" fill="#3FB7A6"/>
+    <line x1="1143" y1="312" x2="1143" y2="336" stroke="#F08A3E" stroke-width="2"/>
+    <polygon points="1139,334 1143,342 1147,334" fill="#F08A3E"/>
+    <line x1="1289" y1="312" x2="1289" y2="336" stroke="#6B7BEA" stroke-width="2"/>
+    <polygon points="1285,334 1289,342 1293,334" fill="#6B7BEA"/>
+
+    <!-- worker 1: coder fast -->
+    <g filter="url(#sh)">
+      <rect x="790" y="344" width="122" height="124" rx="12" fill="#E6F4F1" stroke="#3FB7A6" stroke-width="1.5"/>
+    </g>
+    <circle cx="851" cy="361" r="9" fill="#3FB7A6"/>
+    <text x="851" y="364.5" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF">&lt;/&gt;</text>
+    <text x="851" y="386" text-anchor="middle" font-size="14" font-weight="700" fill="#1F3A4A">coder</text>
+    <rect x="819" y="394" width="64" height="20" rx="10" fill="#3FB7A6"/>
+    <text x="851" y="408" text-anchor="middle" font-size="11" fill="#FFFFFF">fast</text>
+    <text x="851" y="438" text-anchor="middle" font-size="12" fill="#3A5560">写代码</text>
+    <text x="851" y="456" text-anchor="middle" font-size="11" fill="#6A8590">便宜 · 并行</text>
+
+    <!-- worker 2: coder fast -->
+    <g filter="url(#sh)">
+      <rect x="936" y="344" width="122" height="124" rx="12" fill="#E6F4F1" stroke="#3FB7A6" stroke-width="1.5"/>
+    </g>
+    <circle cx="997" cy="361" r="9" fill="#3FB7A6"/>
+    <text x="997" y="364.5" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF">&lt;/&gt;</text>
+    <text x="997" y="386" text-anchor="middle" font-size="14" font-weight="700" fill="#1F3A4A">coder</text>
+    <rect x="965" y="394" width="64" height="20" rx="10" fill="#3FB7A6"/>
+    <text x="997" y="408" text-anchor="middle" font-size="11" fill="#FFFFFF">fast</text>
+    <text x="997" y="438" text-anchor="middle" font-size="12" fill="#3A5560">写代码</text>
+    <text x="997" y="456" text-anchor="middle" font-size="11" fill="#6A8590">便宜 · 并行</text>
+
+    <!-- worker 3: reviewer official (different hue) -->
+    <g filter="url(#sh)">
+      <rect x="1082" y="344" width="122" height="124" rx="12" fill="#FFF1E6" stroke="#F08A3E" stroke-width="1.5"/>
+    </g>
+    <circle cx="1143" cy="361" r="9" fill="#F08A3E"/>
+    <polyline points="1138.5,361 1141.5,364 1147.5,358" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1143" y="386" text-anchor="middle" font-size="14" font-weight="700" fill="#1F3A4A">reviewer</text>
+    <rect x="1111" y="394" width="64" height="20" rx="10" fill="#F08A3E"/>
+    <text x="1143" y="408" text-anchor="middle" font-size="11" fill="#FFFFFF">official</text>
+    <text x="1143" y="438" text-anchor="middle" font-size="12" fill="#3A5560">审代码 · 只读</text>
+    <text x="1143" y="456" text-anchor="middle" font-size="11" fill="#6A8590">不同于写的模型</text>
+
+    <!-- worker 4: researcher gemini -->
+    <g filter="url(#sh)">
+      <rect x="1228" y="344" width="122" height="124" rx="12" fill="#ECEFFC" stroke="#6B7BEA" stroke-width="1.5"/>
+    </g>
+    <circle cx="1289" cy="361" r="9" fill="#6B7BEA"/>
+    <circle cx="1287.5" cy="359.5" r="3.5" fill="none" stroke="#FFFFFF" stroke-width="1.6"/>
+    <line x1="1290" y1="362" x2="1293.5" y2="365.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="1289" y="386" text-anchor="middle" font-size="14" font-weight="700" fill="#1F3A4A">researcher</text>
+    <rect x="1257" y="394" width="64" height="20" rx="10" fill="#6B7BEA"/>
+    <text x="1289" y="408" text-anchor="middle" font-size="11" fill="#FFFFFF">gemini</text>
+    <text x="1289" y="438" text-anchor="middle" font-size="12" fill="#3A5560">查资料</text>
+    <text x="1289" y="456" text-anchor="middle" font-size="11" fill="#6A8590">1M 上下文</text>
+
+    <!-- herdr tab bar -->
+    <line x1="851" y1="468" x2="851" y2="492" stroke="#8FBFCC" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <line x1="997" y1="468" x2="997" y2="492" stroke="#8FBFCC" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <line x1="1143" y1="468" x2="1143" y2="492" stroke="#8FBFCC" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <line x1="1289" y1="468" x2="1289" y2="492" stroke="#8FBFCC" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <rect x="790" y="492" width="560" height="58" rx="10" fill="#DCEBF0" stroke="#8FBFCC" stroke-width="1.5"/>
+    <rect x="809" y="500" width="84" height="22" rx="6" fill="#FFFFFF" stroke="#8FBFCC" stroke-width="1"/>
+    <text x="851" y="515" text-anchor="middle" font-size="11" fill="#2F5A68">coder</text>
+    <rect x="955" y="500" width="84" height="22" rx="6" fill="#FFFFFF" stroke="#8FBFCC" stroke-width="1"/>
+    <text x="997" y="515" text-anchor="middle" font-size="11" fill="#2F5A68">coder</text>
+    <rect x="1101" y="500" width="84" height="22" rx="6" fill="#FFFFFF" stroke="#8FBFCC" stroke-width="1"/>
+    <text x="1143" y="515" text-anchor="middle" font-size="11" fill="#2F5A68">reviewer</text>
+    <rect x="1247" y="500" width="84" height="22" rx="6" fill="#FFFFFF" stroke="#8FBFCC" stroke-width="1"/>
+    <text x="1289" y="515" text-anchor="middle" font-size="11" fill="#2F5A68">researcher</text>
+    <text x="1070" y="541" text-anchor="middle" font-size="12" fill="#2F5A68">herdr：每个 worker 一个 tab（可选）</text>
+
+    <!-- legend -->
+    <text x="800" y="600" font-size="12" fill="#4A6470">profile = 网关 + key + 模型</text>
+    <circle cx="1010" cy="596" r="6" fill="#1E5BC6"/>
+    <text x="1022" y="600" font-size="12" fill="#4A6470">smart</text>
+    <circle cx="1080" cy="596" r="6" fill="#3FB7A6"/>
+    <text x="1092" y="600" font-size="12" fill="#4A6470">fast</text>
+    <circle cx="1145" cy="596" r="6" fill="#F08A3E"/>
+    <text x="1157" y="600" font-size="12" fill="#4A6470">official</text>
+    <circle cx="1240" cy="596" r="6" fill="#6B7BEA"/>
+    <text x="1252" y="600" font-size="12" fill="#4A6470">gemini</text>
+  </g>
+
+  <!-- footer -->
+  <rect x="430" y="660" width="540" height="38" rx="19" fill="#FFFFFF" stroke="#C5D5DC" stroke-width="1.5"/>
+  <text x="700" y="685" text-anchor="middle" font-size="15" fill="#1F3A4A">贵的只做判断 · 便宜的并行干活 · 写与审不是同一个模型</text>
+</svg>

@@ -1,0 +1,265 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 760" width="1400" height="760" font-family="Noto Sans SC, PingFang SC, Helvetica Neue, Arial, sans-serif">
+  <defs>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1F2933" flood-opacity="0.12"/>
+    </filter>
+    <radialGradient id="halo">
+      <stop offset="0" stop-color="#F6C453" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#F6C453" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFAEC"/>
+      <stop offset="1" stop-color="#FBEBC2"/>
+    </linearGradient>
+    <linearGradient id="band" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2B3A4F"/>
+      <stop offset="1" stop-color="#1E2A3B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ===== background ===== -->
+  <rect x="0" y="0" width="1400" height="760" fill="#F8F9FB"/>
+
+  <!-- ===== title ===== -->
+  <text x="40" y="50" font-size="24" font-weight="700" fill="#1F2933">hh 配置模型：三层数据如何引用</text>
+  <text x="40" y="74" font-size="13" fill="#6B7280">端点存密钥，profile 引用端点并绑定模型，角色引用 profile 并限定自主级别；leader 也只是一个 profile</text>
+
+  <!-- ===== file tag (top-right) ===== -->
+  <rect x="1040" y="28" width="320" height="32" rx="16" fill="#FFF6E3" stroke="#E7C57E"/>
+  <circle cx="1060" cy="44" r="4" fill="#D9A441"/>
+  <text x="1074" y="49" font-size="13" fill="#8A5A0B">一个文件：~/.config/hh/config.json（600）</text>
+
+  <!-- ===== column panels ===== -->
+  <rect x="40" y="92" width="360" height="514" rx="16" fill="#E4F1EC"/>
+  <rect x="460" y="92" width="250" height="514" rx="16" fill="#E7ECF8"/>
+  <rect x="770" y="92" width="300" height="514" rx="16" fill="#F1EAF5"/>
+  <rect x="1130" y="92" width="230" height="514" rx="16" fill="#FBF2DF"/>
+
+  <!-- ===== column headers ===== -->
+  <circle cx="68" cy="118" r="12" fill="#2A9D8F"/>
+  <text x="68" y="122" font-size="12" font-weight="700" text-anchor="middle" fill="#FFFFFF">1</text>
+  <text x="86" y="123" font-size="16" font-weight="700" fill="#1F2933">端点 gateway</text>
+  <text x="86" y="143" font-size="12" fill="#6B7280">地址 · 认证 · 密钥 · 附加 env</text>
+
+  <circle cx="488" cy="118" r="12" fill="#5B6ACF"/>
+  <text x="488" y="122" font-size="12" font-weight="700" text-anchor="middle" fill="#FFFFFF">2</text>
+  <text x="504" y="123" font-size="16" font-weight="700" fill="#1F2933">profile = 端点 + 模型</text>
+  <text x="504" y="143" font-size="12" fill="#6B7280">选一个端点，绑一个模型</text>
+
+  <circle cx="798" cy="118" r="12" fill="#B5568A"/>
+  <text x="798" y="122" font-size="12" font-weight="700" text-anchor="middle" fill="#FFFFFF">3</text>
+  <text x="816" y="123" font-size="16" font-weight="700" fill="#1F2933">角色 role</text>
+  <text x="816" y="143" font-size="12" fill="#6B7280">profile + 自主级别 + 说明</text>
+
+  <circle cx="1158" cy="118" r="12" fill="#D9A441"/>
+  <g transform="translate(1158,118)">
+    <polygon points="0,-6 1.53,-2.1 5.71,-1.85 2.47,0.8 3.53,4.85 0,2.6 -3.53,4.85 -2.47,0.8 -5.71,-1.85 -1.53,-2.1" fill="#FFFFFF"/>
+  </g>
+  <text x="1176" y="123" font-size="16" font-weight="700" fill="#1F2933">leader</text>
+  <text x="1176" y="143" font-size="12" fill="#6B7280">聪明模型当指挥</text>
+
+  <!-- ===== reference connectors (orthogonal) ===== -->
+  <!-- profile -> gateway -->
+  <polyline points="476,210 436,210 436,229 384,229" fill="none" stroke="#7C8798" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="476,312 436,312 436,383 384,383" fill="none" stroke="#7C8798" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="476,516 436,516 436,383" fill="none" stroke="#7C8798" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  <polygon points="384,229 394,224 394,234" fill="#7C8798"/>
+  <polygon points="384,383 394,378 394,388" fill="#7C8798"/>
+  <circle cx="436" cy="383" r="3.5" fill="#7C8798"/>
+  <!-- role -> profile -->
+  <line x1="786" y1="210" x2="694" y2="210" stroke="#7C8798" stroke-width="2" stroke-linecap="round"/>
+  <line x1="786" y1="312" x2="694" y2="312" stroke="#7C8798" stroke-width="2" stroke-linecap="round"/>
+  <polyline points="786,414 748,414 748,312" fill="none" stroke="#7C8798" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="786,516 732,516 732,414 694,414" fill="none" stroke="#7C8798" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  <polygon points="694,210 704,205 704,215" fill="#7C8798"/>
+  <polygon points="694,312 704,307 704,317" fill="#7C8798"/>
+  <polygon points="694,414 704,409 704,419" fill="#7C8798"/>
+  <circle cx="748" cy="312" r="3.5" fill="#7C8798"/>
+  <!-- leader -> smart (loop under column 3) -->
+  <polyline points="1146,291 1100,291 1100,582 716,582 716,516 694,516" fill="none" stroke="#C9962E" stroke-width="2" stroke-dasharray="7 5" stroke-linejoin="round" stroke-linecap="round"/>
+  <polygon points="694,516 704,511 704,521" fill="#C9962E"/>
+  <rect x="800" y="571" width="216" height="22" rx="11" fill="#F1EAF5" stroke="#C9962E" stroke-width="1"/>
+  <text x="908" y="586" font-size="11" text-anchor="middle" fill="#9A6B12">leader 也只是引用一个 profile</text>
+
+  <!-- ===== column 1: gateways ===== -->
+  <!-- gemini-gw -->
+  <rect x="56" y="168" width="328" height="122" rx="12" fill="#FFFFFF" stroke="#A9D3CB" filter="url(#sh)"/>
+  <rect x="64" y="181" width="4" height="18" rx="2" fill="#2A9D8F"/>
+  <text x="76" y="195" font-size="16" font-weight="700" fill="#1F2933">gemini-gw</text>
+  <g transform="translate(276,182)">
+    <circle cx="5" cy="0" r="4.5" fill="none" stroke="#C9962E" stroke-width="2.2"/>
+    <line x1="9.5" y1="0" x2="21" y2="0" stroke="#C9962E" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="16" y1="0" x2="16" y2="4" stroke="#C9962E" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="20" y1="0" x2="20" y2="3" stroke="#C9962E" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+  <text x="368" y="186" font-size="11" text-anchor="end" fill="#B8860B">密钥只存一次</text>
+  <text x="76" y="223" font-size="11" fill="#8A94A6">url</text>
+  <text x="120" y="223" font-size="12" fill="#2C3E50">https://gemini-gateway.example.com</text>
+  <text x="76" y="247" font-size="11" fill="#8A94A6">auth</text>
+  <text x="120" y="247" font-size="12" fill="#2C3E50">token</text>
+  <text x="76" y="271" font-size="11" fill="#8A94A6">secret</text>
+  <rect x="114" y="258" width="112" height="19" rx="5" fill="#FFF1CC" stroke="#EBD28E"/>
+  <text x="120" y="271" font-size="12" fill="#7A5A16">env:GEMINI_KEY</text>
+
+  <!-- relay -->
+  <rect x="56" y="310" width="328" height="146" rx="12" fill="#FFFFFF" stroke="#A9D3CB" filter="url(#sh)"/>
+  <rect x="64" y="323" width="4" height="18" rx="2" fill="#2A9D8F"/>
+  <text x="76" y="337" font-size="16" font-weight="700" fill="#1F2933">relay</text>
+  <g transform="translate(276,324)">
+    <circle cx="5" cy="0" r="4.5" fill="none" stroke="#C9962E" stroke-width="2.2"/>
+    <line x1="9.5" y1="0" x2="21" y2="0" stroke="#C9962E" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="16" y1="0" x2="16" y2="4" stroke="#C9962E" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="20" y1="0" x2="20" y2="3" stroke="#C9962E" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+  <text x="368" y="328" font-size="11" text-anchor="end" fill="#B8860B">密钥只存一次</text>
+  <text x="76" y="365" font-size="11" fill="#8A94A6">url</text>
+  <text x="120" y="365" font-size="12" fill="#2C3E50">https://relay.example.com</text>
+  <text x="76" y="389" font-size="11" fill="#8A94A6">auth</text>
+  <text x="120" y="389" font-size="12" fill="#2C3E50">token</text>
+  <text x="76" y="413" font-size="11" fill="#8A94A6">secret</text>
+  <rect x="114" y="400" width="106" height="19" rx="5" fill="#FFF1CC" stroke="#EBD28E"/>
+  <text x="120" y="413" font-size="12" fill="#7A5A16">env:RELAY_KEY</text>
+  <text x="76" y="437" font-size="11" fill="#8A94A6">env</text>
+  <text x="120" y="437" font-size="12" fill="#2C3E50">ENABLE_TOOL_SEARCH=false</text>
+
+  <!-- note -->
+  <circle cx="80" cy="490" r="7" fill="none" stroke="#2A9D8F" stroke-width="1.5"/>
+  <text x="80" y="494" font-size="10" font-weight="700" text-anchor="middle" fill="#2A9D8F">i</text>
+  <text x="96" y="494" font-size="12" fill="#4B5563">secret 写 env:VAR 即从环境变量读取</text>
+  <text x="96" y="514" font-size="12" fill="#4B5563">profile 只按名字引用端点，不复制密钥</text>
+
+  <!-- ===== column 2: profiles ===== -->
+  <!-- gemini -->
+  <rect x="476" y="168" width="218" height="84" rx="12" fill="#FFFFFF" stroke="#B7C0EA" filter="url(#sh)"/>
+  <rect x="484" y="181" width="4" height="18" rx="2" fill="#5B6ACF"/>
+  <text x="496" y="195" font-size="16" font-weight="700" fill="#1F2933">gemini</text>
+  <text x="496" y="219" font-size="11" fill="#8A94A6">端点</text>
+  <text x="530" y="219" font-size="12" fill="#2C3E50">gemini-gw</text>
+  <text x="496" y="239" font-size="11" fill="#8A94A6">模型</text>
+  <text x="530" y="239" font-size="12" fill="#2C3E50">gemini-2.5-pro</text>
+
+  <!-- fast -->
+  <rect x="476" y="270" width="218" height="84" rx="12" fill="#FFFFFF" stroke="#B7C0EA" filter="url(#sh)"/>
+  <rect x="484" y="283" width="4" height="18" rx="2" fill="#5B6ACF"/>
+  <text x="496" y="297" font-size="16" font-weight="700" fill="#1F2933">fast</text>
+  <text x="496" y="321" font-size="11" fill="#8A94A6">端点</text>
+  <text x="530" y="321" font-size="12" fill="#2C3E50">relay</text>
+  <text x="496" y="341" font-size="11" fill="#8A94A6">模型</text>
+  <text x="530" y="341" font-size="12" fill="#2C3E50">vendor/coding-fast</text>
+
+  <!-- official (no gateway) -->
+  <rect x="476" y="372" width="218" height="84" rx="12" fill="#FBFCFF" stroke="#9AA3B8" stroke-dasharray="6 4" filter="url(#sh)"/>
+  <rect x="484" y="385" width="4" height="18" rx="2" fill="#9AA3B8"/>
+  <text x="496" y="399" font-size="16" font-weight="700" fill="#1F2933">official</text>
+  <text x="682" y="399" font-size="10.5" text-anchor="end" fill="#9AA3B8">no gateway</text>
+  <text x="496" y="423" font-size="12" fill="#4B5563">不注入网关</text>
+  <text x="496" y="443" font-size="12" fill="#4B5563">用 claude 自己的登录</text>
+
+  <!-- smart -->
+  <rect x="476" y="474" width="218" height="84" rx="12" fill="#FFFFFF" stroke="#B7C0EA" filter="url(#sh)"/>
+  <rect x="484" y="487" width="4" height="18" rx="2" fill="#5B6ACF"/>
+  <text x="496" y="501" font-size="16" font-weight="700" fill="#1F2933">smart</text>
+  <text x="682" y="501" font-size="10.5" text-anchor="end" fill="#B8860B">leader</text>
+  <text x="496" y="525" font-size="11" fill="#8A94A6">端点</text>
+  <text x="530" y="525" font-size="12" fill="#2C3E50">relay</text>
+  <text x="496" y="545" font-size="11" fill="#8A94A6">模型</text>
+  <text x="530" y="545" font-size="12" fill="#2C3E50">vendor/reasoning-max</text>
+
+  <!-- ===== column 3: roles ===== -->
+  <!-- researcher -->
+  <rect x="786" y="168" width="268" height="84" rx="12" fill="#FFFFFF" stroke="#D5B9CB" filter="url(#sh)"/>
+  <rect x="794" y="181" width="4" height="18" rx="2" fill="#B5568A"/>
+  <text x="806" y="195" font-size="16" font-weight="700" fill="#1F2933">researcher</text>
+  <rect x="966" y="181" width="72" height="21" rx="10.5" fill="#DCE9FA" stroke="#A9C6EE"/>
+  <text x="1002" y="196" font-size="11" font-weight="700" text-anchor="middle" fill="#1E5AA8">readonly</text>
+  <text x="806" y="219" font-size="11" fill="#8A94A6">profile</text>
+  <text x="858" y="219" font-size="12.5" font-weight="700" fill="#5B6ACF">gemini</text>
+  <text x="806" y="239" font-size="12" fill="#4B5563">只读调研</text>
+
+  <!-- coder -->
+  <rect x="786" y="270" width="268" height="84" rx="12" fill="#FFFFFF" stroke="#D5B9CB" filter="url(#sh)"/>
+  <rect x="794" y="283" width="4" height="18" rx="2" fill="#B5568A"/>
+  <text x="806" y="297" font-size="16" font-weight="700" fill="#1F2933">coder</text>
+  <rect x="966" y="283" width="72" height="21" rx="10.5" fill="#FCE3CF" stroke="#F2B58C"/>
+  <text x="1002" y="298" font-size="11" font-weight="700" text-anchor="middle" fill="#B4530F">full</text>
+  <text x="806" y="321" font-size="11" fill="#8A94A6">profile</text>
+  <text x="858" y="321" font-size="12.5" font-weight="700" fill="#5B6ACF">fast</text>
+  <text x="806" y="341" font-size="12" fill="#4B5563">实现明确边界内的改动</text>
+
+  <!-- executor -->
+  <rect x="786" y="372" width="268" height="84" rx="12" fill="#FFFFFF" stroke="#D5B9CB" filter="url(#sh)"/>
+  <rect x="794" y="385" width="4" height="18" rx="2" fill="#B5568A"/>
+  <text x="806" y="399" font-size="16" font-weight="700" fill="#1F2933">executor</text>
+  <rect x="966" y="385" width="72" height="21" rx="10.5" fill="#FCE3CF" stroke="#F2B58C"/>
+  <text x="1002" y="400" font-size="11" font-weight="700" text-anchor="middle" fill="#B4530F">full</text>
+  <text x="806" y="423" font-size="11" fill="#8A94A6">profile</text>
+  <text x="858" y="423" font-size="12.5" font-weight="700" fill="#5B6ACF">fast</text>
+  <text x="806" y="443" font-size="12" fill="#4B5563">跑脚本、批处理</text>
+
+  <!-- reviewer -->
+  <rect x="786" y="474" width="268" height="84" rx="12" fill="#FFFFFF" stroke="#D5B9CB" filter="url(#sh)"/>
+  <rect x="794" y="487" width="4" height="18" rx="2" fill="#B5568A"/>
+  <text x="806" y="501" font-size="16" font-weight="700" fill="#1F2933">reviewer</text>
+  <rect x="966" y="487" width="72" height="21" rx="10.5" fill="#DCE9FA" stroke="#A9C6EE"/>
+  <text x="1002" y="502" font-size="11" font-weight="700" text-anchor="middle" fill="#1E5AA8">readonly</text>
+  <text x="806" y="525" font-size="11" fill="#8A94A6">profile</text>
+  <text x="858" y="525" font-size="12.5" font-weight="700" fill="#5B6ACF">official</text>
+  <text x="806" y="545" font-size="12" fill="#4B5563">只读审查 diff</text>
+
+  <!-- ===== column 4: leader ===== -->
+  <ellipse cx="1245" cy="291" rx="112" ry="80" fill="url(#halo)"/>
+  <ellipse cx="1245" cy="291" rx="106" ry="66" fill="none" stroke="#EED9A0" stroke-width="1" stroke-dasharray="3 5"/>
+  <rect x="1146" y="236" width="198" height="110" rx="14" fill="url(#gold)" stroke="#D9A441" stroke-width="1.5" filter="url(#sh)"/>
+  <g transform="translate(1232,250)">
+    <polygon points="0,16 3,4 9,10 13,0 17,10 23,4 26,16" fill="#E2A93B"/>
+    <rect x="0" y="16" width="26" height="4" rx="1" fill="#C98A1E"/>
+  </g>
+  <text x="1250" y="300" font-size="18" font-weight="700" text-anchor="end" fill="#1F2933">leader =</text>
+  <text x="1260" y="300" font-size="18" font-weight="700" fill="#5B6ACF">smart</text>
+  <text x="1245" y="324" font-size="12" text-anchor="middle" fill="#7A5A16">hh claude 默认用它</text>
+
+  <text x="1158" y="392" font-size="12" fill="#4B5563">只做判断、拆解、派发、验收</text>
+  <rect x="1158" y="410" width="74" height="20" rx="10" fill="#FFFFFF" stroke="#D9A441"/>
+  <text x="1195" y="424" font-size="11" text-anchor="middle" fill="#8A5A0B">hh claude</text>
+  <text x="1240" y="424" font-size="12" fill="#4B5563">用 leader</text>
+  <rect x="1158" y="440" width="86" height="20" rx="10" fill="#FFFFFF" stroke="#D9A441"/>
+  <text x="1201" y="454" font-size="11" text-anchor="middle" fill="#8A5A0B">hh dispatch</text>
+  <text x="1252" y="454" font-size="12" fill="#4B5563">按角色派发</text>
+
+  <!-- ===== bottom band: env overlay order ===== -->
+  <rect x="40" y="626" width="1320" height="110" rx="16" fill="url(#band)"/>
+  <text x="64" y="683" font-size="15" font-weight="700" fill="#FFFFFF">环境变量叠加顺序</text>
+  <line x1="196" y1="648" x2="196" y2="714" stroke="#4A5B72" stroke-width="1"/>
+
+  <text x="414" y="648" font-size="10.5" text-anchor="middle" fill="#9FB0C8">配置文件里的 env</text>
+  <text x="925" y="648" font-size="10.5" text-anchor="middle" fill="#AAB4EE">hh 按 profile 注入</text>
+
+  <rect x="212" y="656" width="110" height="44" rx="8" fill="#3D4D66" stroke="#6A7D99"/>
+  <text x="267" y="682" font-size="12" text-anchor="middle" fill="#FFFFFF">commonEnv</text>
+  <line x1="326" y1="678" x2="346" y2="678" stroke="#8FA1BC" stroke-width="2"/>
+  <polygon points="354,678 345,673 345,683" fill="#8FA1BC"/>
+
+  <rect x="354" y="656" width="120" height="44" rx="8" fill="#3D4D66" stroke="#6A7D99"/>
+  <text x="414" y="682" font-size="12" text-anchor="middle" fill="#FFFFFF">gateway.env</text>
+  <line x1="478" y1="678" x2="498" y2="678" stroke="#8FA1BC" stroke-width="2"/>
+  <polygon points="506,678 497,673 497,683" fill="#8FA1BC"/>
+
+  <rect x="506" y="656" width="120" height="44" rx="8" fill="#3D4D66" stroke="#6A7D99"/>
+  <text x="566" y="682" font-size="12" text-anchor="middle" fill="#FFFFFF">profile.env</text>
+  <line x1="630" y1="678" x2="650" y2="678" stroke="#8FA1BC" stroke-width="2"/>
+  <polygon points="658,678 649,673 649,683" fill="#8FA1BC"/>
+
+  <rect x="658" y="656" width="240" height="44" rx="8" fill="#4E5CBF" stroke="#8A96E6"/>
+  <text x="778" y="682" font-size="12" text-anchor="middle" fill="#FFFFFF">ANTHROPIC_BASE_URL / AUTH_TOKEN</text>
+  <line x1="902" y1="678" x2="922" y2="678" stroke="#8FA1BC" stroke-width="2"/>
+  <polygon points="930,678 921,673 921,683" fill="#8FA1BC"/>
+
+  <rect x="930" y="656" width="262" height="44" rx="8" fill="#4E5CBF" stroke="#8A96E6"/>
+  <text x="1061" y="674" font-size="12" text-anchor="middle" fill="#FFFFFF">ANTHROPIC_MODEL</text>
+  <text x="1061" y="691" font-size="12" text-anchor="middle" fill="#FFFFFF">+ DEFAULT_*_MODEL + SUBAGENT_MODEL</text>
+  <line x1="1196" y1="678" x2="1218" y2="678" stroke="#8FA1BC" stroke-width="2"/>
+  <polygon points="1226,678 1217,673 1217,683" fill="#8FA1BC"/>
+  <text x="1234" y="682" font-size="12" fill="#E6EBF2">claude 子进程</text>
+
+  <text x="212" y="722" font-size="11.5" fill="#B9C5D8">后者覆盖前者；hh env [profile] 可查看最终结果（默认打码）</text>
+</svg>
