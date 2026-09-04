@@ -65,7 +65,7 @@ Headless processes are invisible. [herdr](https://herdr.dev) adds the window and
 - **One tab per worker** with the transcript scrolling live: which files it reads, which tools it calls, where it is stuck. Created with `--no-focus`, so your cursor stays put.
 - **The workspace is the dashboard.** Tab 1 is the Leader; the rest are opened and closed by the Leader (`hh close`).
 - **State never goes through the window.** Completion is decided by `result.json` and the process. Tabs are just windows, collected with `hh close`; without herdr everything still runs, just unwatched.
-- **Zero setup.** `hh claude` opens the Leader in a new herdr tab by default, starts the server if needed, and runs in place when you are already inside herdr. If herdr is not installed it asks "install it and open the Leader there?"; Enter runs the official installer and continues (same for a missing Claude Code). Opt out per launch with `hh claude --no-herdr`, or permanently with `hh viewer none`.
+- **One word to get in.** `hh claude herdr` opens the Leader in a new herdr tab, starts the server if needed, and runs in place when you are already inside herdr. If herdr is not installed it asks "install it and open the Leader there?"; Enter runs the official installer and continues. Plain `hh claude` stays in your terminal while workers still get one tab each whenever herdr is running; `hh claude --no-herdr` opens no windows at all, `hh viewer none` turns them off for good.
 
 <p align="center"><picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/herdr-dark.png">
@@ -104,8 +104,8 @@ hh roles set coder --profile fast           # cheap and fast does the work
 hh roles set reviewer --profile official    # the writer is never the reviewer
 hh leader smart                             # your smartest profile leads
 hh doctor --net                             # real round trip for every profile a role uses
-hh claude                                   # start the Leader: with herdr installed it opens in a new herdr tab, one tab per worker
-hh claude --no-herdr                        # no windows: Leader stays in this terminal, workers run in the background
+hh claude                                   # start the Leader in this terminal (one herdr tab per worker while herdr is running)
+hh claude herdr                             # open the Leader itself in a new herdr tab; hh claude --no-herdr = no windows at all
 ```
 
 > **Default permissions**: `hh claude` passes `--dangerously-skip-permissions`, and the `full` autonomy of coder / executor maps to `--permission-mode bypassPermissions`. Workers get your full local rights; dispatch only into directories you trust, and tighten via `claude.interactiveArgs` and each role's `autonomy` (`workspace` / `readonly`).
@@ -237,9 +237,9 @@ hh init [--force] [--no-setup]    write config; import claude-launch aliases; dr
 hh setup                          Q&A: add an endpoint + profile, assign it, send a pong
 hh install claude|herdr [--yes]   install a missing dependency with its official script
 hh doctor [--net] [--all]         health check; --net sends a real pong per profile used by a role
-hh claude [--leader] [profile]    no profile = Leader mode (opens in herdr by default); with profile = launch in this terminal
-    --no-herdr | --herdr          stay in this terminal, workers without windows | open normal mode in herdr too
-hh viewer [auto|herdr|none]       whether the Leader and workers use herdr windows
+hh claude [herdr] [--leader] [profile]   no profile = Leader mode; with profile = launch in this terminal; herdr = open in a new herdr tab
+    --no-herdr                    no windows at all, workers included
+hh viewer [auto|herdr|none]       whether workers get herdr windows; herdr = hh claude opens in herdr too
 hh env <profile> [--reveal]       the environment that will be injected
 hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LABEL] [-d CWD] (-f FILE | -t "TASK")
 hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID

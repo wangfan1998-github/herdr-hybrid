@@ -82,7 +82,7 @@ Leader 靠原则工作，不靠关键词：启动时把当前真实的角色表�
 - **每个 worker 一个 tab**，transcript 实时滚动：它在读什么文件、调什么工具、卡在哪。`--no-focus` 创建，不抢你的光标。
 - **工作区就是看板**。tab 1 是 Leader，其余 tab 由 Leader 建、由 Leader 收（`hh close`）。想看细节点进去，不用在里面输入。
 - **状态从不经过窗口**。完成与否只看 `result.json` 和进程；tab 只是窗口，用 `hh close` 收；没装 herdr 一切照跑，只是没有窗口。`hh view` 随时给后台 run 补开一个。
-- **不用配**。`hh claude` 默认就把 Leader 开进 herdr 的新 tab，server 没起会自动拉起，已经在 herdr 里就原地启动；没装 herdr 会问一句「装上并开进去？」，回车就用官方脚本装好接着开（Claude Code 没装同理）。不想要窗口：单次 `hh claude --no-herdr`，或 `hh viewer none` 永久关掉、不再问。
+- **一个词开进去**。`hh claude herdr` 把 Leader 开进 herdr 的新 tab，server 没起会自动拉起，已经在 herdr 里就原地启动；没装 herdr 会问一句「装上并开进去？」，回车就用官方脚本装好接着开。平时 `hh claude` 仍在当前终端，herdr 在跑时 worker 照样各开一个 tab；`hh claude --no-herdr` 连 worker 也不开窗口，`hh viewer none` 永久关掉。
 
 <p align="center">
   <picture>
@@ -146,8 +146,8 @@ hh roles set coder --profile fast           # 便宜快的干活
 hh roles set reviewer --profile official    # 官方登录的审：写的和审的不是同一个模型
 hh leader smart                             # 最聪明的当 Leader
 hh doctor --net                             # 角色用到的 profile 各发一次 pong
-hh claude                                   # 启动 Leader：装了 herdr 就开在 herdr 的新 tab 里，worker 各一个窗口
-hh claude --no-herdr                        # 不要窗口：Leader 留在当前终端，worker 后台跑
+hh claude                                   # 启动 Leader，然后直接说需求（herdr 在跑时 worker 各开一个 tab）
+hh claude herdr                             # 把 Leader 也开进 herdr 的新 tab；hh claude --no-herdr 连 worker 也不开窗口
 ```
 
 然后直接说需求。Leader 会自己拆解 → 派发 → 等待 → 验收 → review → 返修 → 中文汇报，中途不问你。
@@ -299,9 +299,9 @@ hh init [--force] [--no-setup]    生成配置；自动导入 claude 启动 alia
 hh setup                          一问一答加一个端点 + profile，顺手分工、测连通
 hh install claude|herdr [--yes]   官方安装脚本装缺的依赖
 hh doctor [--net] [--all]         体检；--net 对角色用到的 profile 真发一次 pong
-hh claude [--leader] [profile]    不带 profile = Leader 模式（默认开进 herdr）；带 profile = 用该 profile 在当前终端启动
-    --no-herdr | --herdr          留在当前终端且 worker 不开窗口 | 普通模式也开进 herdr
-hh viewer [auto|herdr|none]       Leader 与 worker 用不用 herdr 窗口
+hh claude [herdr] [--leader] [profile]   不带 profile = Leader 模式；带 profile = 用该 profile 在当前终端启动；herdr = 开进 herdr 新 tab
+    --no-herdr                    连 worker 也不开窗口
+hh viewer [auto|herdr|none]       worker 开不开 herdr 窗口；herdr = hh claude 也自动开进去
 hh env <profile> [--reveal]       看将注入的环境变量
 hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LABEL] [-d CWD] (-f FILE | -t "TASK")
 hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID

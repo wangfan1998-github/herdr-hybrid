@@ -24,11 +24,11 @@
 
 ## herdr 相关
 
-**`hh claude` 没有开进 herdr**：`hh claude --dry-run` 的 `launch` 行说明原因。`terminal` 加「herdr 未安装」→ 终端里 `hh claude` 会问你要不要装，回车即装；非 TTY 不代跑安装脚本，手动 `hh install herdr`；`terminal` 加「viewer = none」→ `hh viewer auto`；`pane` 表示你已经在 herdr 的 pane 里，原地启动不再开 tab，派出的 worker 照样各开一个 tab。
+**`hh claude herdr` 没有开进 herdr**：`hh claude herdr --dry-run` 的 `launch` 行说明原因。「herdr 未安装」→ 终端里会问你要不要装，回车即装；非 TTY 不代跑安装脚本，手动 `hh install herdr`；`pane` 表示你已经在 herdr 的 pane 里，原地启动不再开 tab，派出的 worker 照样各开一个 tab。平时 `hh claude` 默认在当前终端，这不是故障。
 
 **开了 tab 但终端没跳进 herdr**：只有 stdin 和 stdout 都是 TTY 才会附着客户端；在 Agent 的 shell 里只建 tab 并返回 JSON，自己打开 herdr 即可看到 `hh:leader` tab。
 
-**「herdr server 没能在 15 秒内就绪」**：hh 用 `herdr server` 后台拉起失败，Leader 改在当前终端运行。手动 `herdr` 启动一次看报错；`hh doctor` 看 herdr 行。
+**「herdr server 没能在限定时间内就绪」**：`hh claude herdr` 用 `herdr server` 后台拉起失败（默认等 15 秒），Leader 改在当前终端运行。手动 `herdr` 启动一次看报错；`hh doctor` 看 herdr 行。
 
 **Claude Code / herdr 没装**：`hh install claude` / `hh install herdr` 跑官方安装脚本（TTY 里先确认，`--yes` 跳过；Windows 只打印命令）。`install.sh` 首次安装时也会问。
 
