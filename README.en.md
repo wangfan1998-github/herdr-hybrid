@@ -7,7 +7,7 @@
 
 <p align="center">
   <strong>Let your smartest model lead. Let the cheap ones build.</strong><br>
-  Hybrid orchestration for Claude Code: every subscription, API key and gateway in one config; different models write, review and research each other's work; a Leader that plans and verifies; workers that build in parallel; one herdr tab per worker.
+  Hybrid orchestration for Claude Code and Codex: every subscription, API key and gateway in one config; different models write, review and research each other's work; a Leader that plans and verifies; workers that build in parallel; one herdr tab per worker.
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@ If you hold several subscriptions, API keys or gateways, this is probably how yo
 | **The most expensive model types everything**: planning and typing burn the same tokens | **Expensive tokens only for judgement**: the Leader decomposes, verifies and reports; cheap profiles implement |
 | **Trying another model = edit an alias, reopen a terminal, re-explain the context** | **`hh send` resumes the same session**; `-p` re-dispatches the same task to another profile for comparison |
 
-Still Claude Code, no new toolchain: the Leader is an interactive Claude Code session, workers are headless `claude -p` processes, each carrying its own profile's endpoint and model.
+Use official Claude Code or Codex CLIs. In external mode, workers are independent headless processes with their own profile. In native mode, the current CLI manages subagents while hh routes each configured model.
 
 ## How it works
 
@@ -44,7 +44,7 @@ Still Claude Code, no new toolchain: the Leader is an interactive Claude Code se
     <img src="docs/assets/architecture-light.png" alt="architecture" width="100%">
   </picture></p>
 
-hh never calls a model API. It does three things: translate a profile into environment variables and `claude` arguments; launch Claude Code with them, interactive for the Leader and headless for workers; translate each worker's event stream back into a readable transcript and a machine-readable `result.json`. State lives only in files: one directory per run, and completion is decided by `result.json` and whether the process is alive.
+External mode translates profiles into CLI launch configuration and worker events into transcripts and result.json; run state comes from files and process status. Native mode uses hh’s own session router to call model APIs, with a default worker model, optional models, delegation guidance and bounded fallback.
 
 The Leader works from principles, not keywords. At launch it receives the live role roster (who is good at what) and the profile list, then decides for every request what changes, what capability it needs and how completion will be proven. Workers end with a JSON report (files changed, verification commands run, assumptions); the Leader checks data, and follow-ups resume the same session.
 
@@ -206,6 +206,31 @@ Switch the reviewer to smart; add a tester role on fast that only runs tests
 
 A profile is gateway + model; the key lives on the gateway and is stored once. Roles are data: any name, `desc` tells the Leader what it is for, `autonomy` maps to `--permission-mode`. Secrets live only in this file (or `env:VAR`) and are masked in every output.
 
+### /hh-config: edit the config visually inside the Leader
+
+`hh claude` attaches `mod/` (a Claude Code function-hooks plugin) when it starts a Leader, so typing `/hh-config` in that session opens a pane with three tabs — profiles / gateways / roles — where every row can be edited or removed, plus a "+ new" button.
+
+- **Anything with a fixed set of values is a dropdown, not a text field**: `agent` (claude / codex), `auth` (token / apikey) and `autonomy` (full / workspace / readonly) are fixed enums, while `gateway` and `profile` read their options live from `hh gateways/profiles --json` — so whatever you pick exists, and "the gateway this profile references does not exist" stops being possible. `url` / `secret` / `model` / `desc` and the name stay text inputs.
+- The pane only draws. **Every read and write shells out to `hh … --json`**, so validation, reference protection (removing a gateway a profile still uses is refused) and the 0600 write path are exactly the same as on the command line — there is no second implementation to keep in sync.
+- **Secrets are never echoed**: the list shows `plat***cQ`, and the secret field starts empty, where empty means "leave unchanged". Type a new value only to rotate it; `env:VAR_NAME` works too.
+- Profiles running `codex` are tagged `[codex]` in the list; the default `claude` is left untagged.
+- `/hh-config` toggles: run it again to close, or press Esc, or hit the `✕` button.
+- The pane docks on the right by default. `hh pane bottom` moves it above the prompt, `hh pane right` moves it back. Placement itself is decided by the terminal layout and cannot be set by a plugin, so the switch really toggles `CLAUDE_CODE_NO_FLICKER`: the bottom seat needs it off, which can make the screen flicker on redraw — hence right stays the default.
+- Attached in Leader mode only, and only for agents that support plugins (`agent.capabilities.mod`) — `hh claude <profile>` means "just use this model" and stays untouched.
+- Nothing is installed into `~/.claude`: `--plugin-dir` lasts for that session, and uninstalling hh takes it away.
+
+**Prerequisite**: Claude Code needs function hooks enabled, via `~/.claude/settings.json`:
+
+```json
+"CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
+```
+
+Without it `/hh-config` simply does not appear; nothing else is affected. `hh doctor` reports this under `leader.mod`.
+
+> Function hooks are an **early access** Claude Code surface (its own type file says it "may change between releases without notice"). After upgrading Claude Code, regenerate types with `/plugin-types` inside `mod/` and re-run `claude plugin test mod/`.
+>
+> The pane's logic is covered by `mod/tests/pane.test.tsx` (rendering, secret masking, save arguments, error surfacing, command registration). How it looks in the interactive TUI is worth confirming once yourself with `hh claude`.
+
 ## More
 
 <details>
@@ -219,6 +244,7 @@ hh doctor [--net] [--all]         health check; --net sends a real pong per prof
 hh claude [herdr] [--leader] [profile]   no profile = Leader mode; with profile = launch in this terminal; herdr = open in a new herdr tab
     --no-herdr                    no windows at all, workers included
 hh viewer [auto|herdr|none]       whether workers get herdr windows; herdr = hh claude opens in herdr too
+hh pane [right|bottom]            dock the /hh-config pane on the right (default) or above the prompt
 hh env <profile> [--reveal]       the environment that will be injected
 hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LABEL] [-d CWD] (-f FILE | -t "TASK")
 hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID
@@ -254,3 +280,7 @@ hh install-mcp  ·  hh mcp
 Docs: [config](docs/config.md) · [profiles & report contract](docs/profiles.md) · [observability](docs/observability.md) · [troubleshooting](docs/troubleshooting.md) · [Leader protocol](skill/herdr-leader/SKILL.md) · [example pipeline](examples/feature-pipeline.md)
 
 <p align="center"><sub>Optional viewer built on <a href="https://herdr.dev">herdr</a> · README structure after <a href="https://github.com/0x0funky/agent-sprite-forge">agent-sprite-forge</a>, design guidance from <a href="https://github.com/pbakaus/impeccable">impeccable</a> and <a href="https://github.com/VoltAgent/awesome-design-md">awesome-design-md</a> · MIT</sub></p>
+
+## Dual orchestration modes
+
+`hh run PROFILE --mode external` retains independent Claude Code / Codex workers. Codex can now lead via session-scoped developer instructions. `native` uses the built-in session router and protocol codecs for in-client, cross-provider subagents with a default worker, delegation guidance and request-level fallback. Existing profiles retain their behavior. See [configuration and compatibility limits](docs/orchestration.md). Native mode requires gateway wire formats and a worker policy; it does not turn native children into hh runs.

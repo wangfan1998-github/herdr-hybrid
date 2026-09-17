@@ -1,0 +1,5 @@
+{
+  "name": "hh-config",
+  "description": "hh 的可视化配置界面：在 Claude Code 里用 /hh-config 打开一个 pane，浏览和修改端点 / profile / 角色。",
+  "version": "0.1.0"
+}

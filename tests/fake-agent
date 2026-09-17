@@ -5,6 +5,13 @@
 // 任务里含 "envcheck" 时，回复里带上 ANTHROPIC_BASE_URL / ANTHROPIC_MODEL / ANTHROPIC_AUTH_TOKEN 的取值，用来验证 profile env 注入。
 const args = process.argv.slice(2);
 const get = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; };
+// doctor 的登录体检会调 `claude auth status`（真 claude 输出 JSON）。
+// FAKE_LOGGED_OUT=1 模拟未登录，用来测 doctor 报 ✗。
+if (args[0] === 'auth' && args[1] === 'status') {
+  const loggedIn = !process.env.FAKE_LOGGED_OUT;
+  process.stdout.write(`${JSON.stringify({ loggedIn, authMethod: 'oauth_token', apiProvider: 'firstParty' })}\n`);
+  process.exit(0);
+}
 const resume = get('--resume');
 const session = resume || `fake-${Date.now().toString(36)}`;
 let task = '';

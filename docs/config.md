@@ -30,7 +30,8 @@
   "viewer": "auto",
   "workspace": "w1",
   "footer": "## 完成要求\n\n- 全程不要向 Leader 提问…",
-  "claude": { "bin": "claude", "interactiveArgs": ["--dangerously-skip-permissions"] },
+  "claude": { "bin": "claude", "interactiveArgs": ["--dangerously-skip-permissions"], "pane": "right" },
+  "codex": { "bin": "codex", "interactiveArgs": [] },
   "commonEnv": { "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1", "CLAUDE_CODE_NO_FLICKER": "1", "API_TIMEOUT_MS": "3000000" },
   "gateways": {},
   "profiles": {},
@@ -45,7 +46,9 @@
 | `workspace` | herdr 工作区 id，默认 `w1` |
 | `footer` | 拼在每个任务文件末尾的「完成要求」，默认要求 worker 在回复末尾附一个 JSON 报告（`status / summary / changed / commits / verified / assumptions / blockers`），hh 解析进 `result.report`。改了它记得保留 json 块的要求，否则 `report` 为空 |
 | `claude.bin` | `claude` 可执行文件；profile 可单独覆盖 |
+| `codex.bin` | `codex` 可执行文件；profile 可单独覆盖。只影响 `agent: "codex"` 的 profile |
 | `claude.interactiveArgs` | `hh claude <profile>` 时追加的参数，默认跳过权限确认 |
+| `claude.pane` | `/hh-config` 面板贴哪边：`right`（默认，右侧）· `bottom`（提示框上方）。`hh pane right\|bottom` 切换。pane 的位置由终端布局决定、插件设不了，所以这个开关实际切的是 `CLAUDE_CODE_NO_FLICKER`：`bottom` 会把它注入成 `0`（main screen 布局），代价是整屏可能有重绘闪烁。只作用于挂了面板的 Leader |
 | `commonEnv` | 每个 profile 都带的环境变量；`official` 也带 |
 
 ## gateways
@@ -84,10 +87,11 @@ hh gateways rm vendor          # 仍被 profile 引用会拒绝
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
 | `gateway` | 是（可为 `null`） | `gateways` 里的名字；`null` / `official` = 不注入网关变量，并清掉继承来的；`hh profiles set` 不给 `--gateway` 即为 null |
-| `model` | 否 | 传给 `ANTHROPIC_MODEL` 及 `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL`、`CLAUDE_CODE_SUBAGENT_MODEL`；空 = 网关默认 |
+| `agent` | 否 | 用哪个 CLI 干活：`claude`（缺省，不写就是它）· `codex`。决定无头命令、事件流解析、网关怎么注入。`hh profiles set <n> --agent codex` |
+| `model` | 否 | claude：传给 `ANTHROPIC_MODEL` 及 `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL`、`CLAUDE_CODE_SUBAGENT_MODEL`；codex：传给 `-m`。空 = 网关默认 |
 | `env` | 否 | 只对这个 profile 生效的环境变量；同名覆盖网关的 |
-| `args` | 否 | 追加给 `claude` 的参数（交互式和无头都加） |
-| `bin` | 否 | 覆盖 `claude` 可执行文件路径 |
+| `args` | 否 | 追加给 agent 的参数（交互式和无头都加） |
+| `bin` | 否 | 覆盖可执行文件路径（默认取 `claude.bin` / `codex.bin`） |
 | `note` | 否 | 备注，`hh profiles` 里显示 |
 
 ```bash
@@ -150,3 +154,7 @@ hh leader smart
 ```
 
 `hh send` 的返修 run 只发送你的追加指令 + 完成要求（会话里已经有角色规范）。
+
+## 内置原生子代理（可选）
+
+网关可声明 `wire: "responses" | "anthropic" | "chat"`，以及 `contextWindow`、`maxOutputTokens`、可选 `capabilities`（imageInput、parallelToolCalls、reasoningSummaries、reasoningEfforts）。profile 的 `orchestration` 保存 `{mode: "native", workerModel: "gateway/model", models: [], fallback: [], prompt: "", effort: "high"}`。凭证复用 gateway.secret（支持 env:变量名）；无需外部代理服务。完整说明见 [orchestration.md](orchestration.md)。

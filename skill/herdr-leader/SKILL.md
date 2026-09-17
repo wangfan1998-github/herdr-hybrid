@@ -63,3 +63,5 @@ worker 汇报契约：每个 run 的 `result.report` 是它按 schema 交的 JSO
 ## 配置
 
 用户要加 / 删 / 换模型、网关、角色时，用原语改并验证：`hh gateways set|rm`、`hh profiles set|rm|test|import-aliases`、`hh roles set|rm`（`--desc` 写清用途，Leader 以后靠它选人）、`hh leader`、`hh doctor`。缺密钥向用户要，这是唯一允许中途提问的配置场景；密钥不回显。
+
+用户想自己看着改：只有「当前环境」里说了配置面板可用时，才告诉他敲 `/hh-config`（一个面板，profiles / gateways / roles 三个标签页，可改可删可新建，底层调的就是上面这些命令）。面板依赖 Claude Code 的 function hooks，不是所有 Agent 都有——环境里说不可用时，直接用上面的命令替他改，别让他去敲一个不会出现的斜杠命令（`hh doctor` 的 `leader.mod` 会说明原因）。

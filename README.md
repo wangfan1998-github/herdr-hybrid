@@ -7,11 +7,11 @@
 
 <p align="center">
   <strong>让你最聪明的模型当 Leader，便宜的模型干活。</strong><br>
-  Claude Code 的混动编排：多家订阅 / API key / 网关一份配置；不同模型交叉开发、交叉 review；Leader 拆解、验收、汇报，worker 并行实现；每个 worker 在 herdr 里一个窗口。
+  Claude Code / Codex 的混动编排：多家订阅 / API key / 网关一份配置；不同模型交叉开发、交叉 review；Leader 拆解、验收、汇报，worker 并行实现；每个 worker 在 herdr 里一个窗口。
 </p>
 
 <p align="center">
-  <sub>Hybrid orchestration for Claude Code: every subscription, API key and gateway in one config; different models write, review and research each other's work; a Leader that plans and verifies, workers that build in parallel; one herdr tab per worker.</sub>
+  <sub>Hybrid orchestration for Claude Code and Codex: every subscription, API key and gateway in one config; different models write, review and research each other's work; a Leader that plans and verifies, workers that build in parallel; one herdr tab per worker.</sub>
 </p>
 
 <p align="center">
@@ -36,6 +36,17 @@
 
 <br>
 
+## 双模式编排
+
+现在支持 Claude Code / Codex Leader，以及两种执行方式：`external` 保留独立 CLI worker；`native` 使用项目内置路由与协议转换，让当前 CLI 的原生子代理选择不同厂商模型，并配置默认 worker、委派提示和请求回退。
+
+```bash
+hh run PROFILE --mode external
+hh run PROFILE --mode native --dry-run
+```
+
+原生模式复用现有 gateways，声明网关协议并配置 worker 策略，详见 [双模式配置与兼容边界](docs/orchestration.md)。现有 profile 和调度流程不变。
+
 ## 为什么混动
 
 手里有几家订阅、API key 或网关的人，大多是这么用 Claude Code 的：
@@ -48,7 +59,7 @@
 | **最贵的模型从头写到尾**：规划和搬砖烧同一份 token | **贵的只做判断**：Leader 拆解、验收、汇报；实现、跑脚本交给便宜的 |
 | **换个模型试试 = 改 alias、重开终端、重讲一遍上下文** | **`hh send` 接着同一会话返修**；`-p` 换个 profile 重派同一任务对照 |
 
-还是 Claude Code，不换工具链：Leader 是一个交互式 Claude Code，worker 是一批 `claude -p` 无头进程，各自带着自己 profile 的端点和模型。
+还是官方 CLI，不换工具链：Leader 是一个交互式 Claude Code，worker 是一批无头进程（`claude -p` 或 `codex exec`），各自带着自己 profile 的 agent、端点和模型。
 
 ## 它是怎么工作的
 
@@ -59,7 +70,7 @@
   </picture>
 </p>
 
-hh 不调用任何模型 API，它只做三件事：把 profile 翻译成一组环境变量和 `claude` 的参数；用这组变量启动 Claude Code，交互式的当 Leader，无头的当 worker；把 worker 的事件流翻译回一份人能读的 transcript 和一份机器能读的 `result.json`。状态只来自文件：每个 run 一个目录，完成与否只看 `result.json` 和进程是否活着。
+external 模式把 profile 翻译成 Claude Code / Codex 的启动配置，启动独立 worker，并将事件流整理为 transcript 与 `result.json`；run 状态来自文件和进程。native 模式则由 hh 的会话内路由器调用模型 API，让当前 CLI 的原生子代理选择不同厂商模型，支持默认 worker、委派提示与失败回退。
 
 Leader 靠原则工作，不靠关键词：启动时把当前真实的角色表（谁擅长什么）和 profile 清单注入 prompt，它按「这件事改变什么 / 需要什么能力 / 怎么证明做完了」三问决定派给谁、给多大权限、怎么验收。worker 结束时按契约交一份 JSON 报告（改了什么、跑了什么验收、有什么假设），Leader 拿数据核对，返修直接接着同一会话继续。
 
@@ -264,7 +275,53 @@ launch   herdr tab w1:tU   parent 20260902-172446-e2e-9e5c (resumed)
 - **角色是数据**。名字任意，`desc` 告诉 Leader 它擅长什么；`autonomy` 决定权限：`full` / `workspace` / `readonly`。
 - **密钥只在这个文件里**，可写成 `env:VAR` 从环境取；所有输出打码。
 
-改配置四种方式等价：`hh setup` 一问一答、对 Leader 说、`hh gateways/profiles/roles set`、直接改文件。字段见 [docs/config.md](docs/config.md)，env 注入顺序与汇报契约见 [docs/profiles.md](docs/profiles.md)。
+改配置五种方式等价：`hh setup` 一问一答、**Leader 里 `/hh-config` 可视化改**、对 Leader 说、`hh gateways/profiles/roles set`、直接改文件。字段见 [docs/config.md](docs/config.md)，env 注入顺序与汇报契约见 [docs/profiles.md](docs/profiles.md)。
+
+### /hh-config：在 Leader 里可视化改配置
+
+`hh claude` 启动 Leader 时会自动挂上 `mod/`（Claude Code 的 function hooks），在会话里敲 `/hh-config` 就能开出一个面板：三个标签页 profiles / gateways / roles，每行可以「改」「删」，也能「+ 新建」。
+
+```
+[profiles]  gateways   roles    + 新建   ⟳   ✕ 关闭
+official        official     -                      改  删
+fast            relay        vendor/coding-fast     改  删
+cx              [codex] relay  vendor/gpt-x           改  删
+```
+
+编辑态里**枚举字段是下拉，不用手敲**：
+
+```
+新建 profiles
+名字            ▎mycx
+agent           ‹ codex ›            claude | codex
+端点 (gateway)   ‹ relay ›            official + 现有端点，实时读
+模型 (model)     ▎vendor/gpt-x        自由文本
+编排 (mode)      ‹ external ›         external | native | plain
+                [ 保存 ]  [ 取消 ]
+```
+
+- **能选的一律用下拉**：`agent`（claude / codex）、`auth`（token / apikey）、`autonomy`（full / workspace / readonly）、`mode`（external / native / plain）、网关的 `wire`（responses / anthropic / chat）是固定枚举；`gateway` 和 `profile` 的选项**从 `hh gateways/profiles --json` 实时读**，所以选出来的一定存在——「profile 引用的网关不存在」这类错误从源头没了。剩下 `url` / `secret` / `model` / `desc` / 名字是自由文本，仍是输入框。
+- **native 模式的前置条件面板帮你守着**：`native` 要求它引用的每个网关都声明了 `wire`，缺了保存前就拦住（不会写出一份跑不起来的配置）；网关列表也会标出还没声明 `wire` 的端点。`external` 不需要。
+- 界面只负责画，**所有读写都调 `hh … --json`**，所以校验、引用保护（删被引用的端点会被拒）、0600 写盘全部和命令行完全一致，不存在两套逻辑。
+- **密钥不回显**：列表里显示的是 `plat***cQ`，编辑时密钥框默认留空 = 不改；要换才敲新值，也可以填 `env:VAR_NAME`。
+- 用 `codex` 的 profile 在列表里标 `[codex]`（默认的 `claude` 不标，免得每行都是噪音）。
+- `/hh-config` 是开关，再敲一次关掉；也可以按 Esc 或点面板上的 `✕ 关闭`。
+- 面板默认贴在右边。`hh pane bottom` 换到底部（提示框上方），`hh pane right` 换回来。位置本身由终端布局决定、插件改不了，这个开关实际是在切 `CLAUDE_CODE_NO_FLICKER`：贴底要关掉它，代价是整屏可能有重绘闪烁，所以默认保持贴右。
+- 只在 Leader 模式挂，且只挂在支持插件的 agent 上（`agent.capabilities.mod`）。`hh claude <profile>` 是「就想用这个模型」，不会被塞东西。
+- 不往 `~/.claude` 里装任何东西：`--plugin-dir` 只在 Leader 这次会话生效，卸载 hh 就一起没了。
+
+**前置条件**：Claude Code 要开 function hooks，在 `~/.claude/settings.json` 的 `env` 里加
+
+```json
+"CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
+```
+
+没开的话 `/hh-config` 不会出现，其它功能不受影响。`hh doctor` 的 `leader.mod` 一项会直接告诉你缺哪一环。
+
+> function hooks 是 Claude Code 的 **early access** 接口（官方类型文件里写明「may change between releases without notice」），升级 Claude Code 后如果面板异常：在 `mod/` 里跑 `/plugin-types` 重新生成类型，再 `claude plugin test mod/`。
+>
+> 面板逻辑由 `mod/tests/pane.test.tsx` 覆盖（渲染合法性、下拉选项、密钥打码、保存参数、native 的 wire 前置校验、错误透出、命令注册、开关），跑 `claude plugin test mod/`。交互式 TUI 里的实际观感需要你自己开一次 `hh claude` 确认。
+
 
 ## 更多
 
@@ -279,6 +336,7 @@ hh doctor [--net] [--all]         体检；--net 对角色用到的 profile 真�
 hh claude [herdr] [--leader] [profile]   不带 profile = Leader 模式；带 profile = 用该 profile 在当前终端启动；herdr = 开进 herdr 新 tab
     --no-herdr                    连 worker 也不开窗口
 hh viewer [auto|herdr|none]       worker 开不开 herdr 窗口；herdr = hh claude 也自动开进去
+hh pane [right|bottom]            /hh-config 面板贴右边（默认）还是贴底
 hh env <profile> [--reveal]       看将注入的环境变量
 hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LABEL] [-d CWD] (-f FILE | -t "TASK")
 hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID
@@ -288,6 +346,37 @@ hh profiles [show|set|rm|test NAME | aliases | import-aliases]
 hh roles [set ROLE --profile P [--autonomy A] [--desc "…"] | rm ROLE]  ·  hh leader [PROFILE]
 hh install-mcp  ·  hh mcp
 ```
+</details>
+
+<details>
+<summary>配置界面（mod）开发</summary>
+
+`mod/` 是一个 Claude Code function hooks 插件，`hh claude` 起 Leader 时用 `--plugin-dir` 挂进去。
+
+```bash
+claude plugin test mod/          # 跑面板的单测（23 个）
+cd mod && claude -p "/plugin-types"   # 升级 Claude Code 后重新生成类型
+```
+
+```
+mod/
+  .claude-plugin/plugin.json   插件清单
+  hooks/hooks.json             必须有，"modules" 指向 register.tsx（少了它整个插件不加载）
+  hooks/register.tsx           界面本体
+  tests/pane.test.tsx          单测
+```
+
+写的时候注意这几条（官方文档没写，都是实测出来的）：
+
+- 传 `$` 的函数必须是**本文件顶层的函数声明**，不能是闭包里的，否则加载期就被静态检查拒掉。所以界面状态放模块作用域。
+- 斜杠命令要在 `session.start` 里调 `$.command.register` 主动注册；只写 `command.run` 的 hook 不会让 `/hh-config` 出现在 typeahead 里。
+- pane 用 **`e.requestId`** 认（= `$.ui.open` 给的 id），`e.props` 里**没有** `id`。认错了框会开出来但内容全空。
+- **每个 `Input` 必须有 `onSubmit`、`Button` 必须有 `onPress`、`Select` 必须有 `options`（≥1 项、value 唯一）和 `onSelect`**，少一个引擎就拒绝整棵树 → 面板空白 + `ui.render hook skipped: threw`。
+- 回调不会留在 `props` 里，引擎把它们收成 handle 挂在节点的 `press` 字段上。所以测试里判「有没有回调」要看 `node.press.handle`，查 `props.onSubmit` 永远是 undefined —— 那样写等于没校验。
+- 测试 kit 的 `$.ui` 只有 `render / scroll / focus / press`：**没有 select / input**，所以「点下拉选一项」没法在单测里驱动，只能验证 options / value / 保存逻辑，真实交互得在 TUI 里手测。
+- 单测里插件底下什么都没有，`ui.open` / `ui.render` / `ui.close` / `ui.invalidate` / `command.run` / `process.run` 都要给底座实现；这些返回 `{ value: … }`，但 `session.start` 是直接返回 `{ cwd }`。按钮要先 `$.ui.render` 画出来才能 `$.ui.press`。
+- `mod/hooks/register.tsx` 里的下拉选项是写死的字面量（插件环境读不到 `lib/`），smoke 有一条守卫比对它和 `lib/agents` 的 `NAMES`、`config.AUTONOMY`、`config.AUTH`，加 agent 时别忘了同步。
+
 </details>
 
 <details>

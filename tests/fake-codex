@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+'use strict';
+// 假 codex：仿 codex-cli 0.144.3 的 `codex exec --json` 事件流（形状照实测抓的样本写）。
+// smoke 里把 codex profile 的 bin 指到这里，不需要真装 codex、不发网络请求。
+const args = process.argv.slice(2);
+const get = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; };
+// doctor 的登录体检会调 `codex login status`：真 codex 输出一行人话，靠退出码判定
+//   exit 0 = "Logged in using ChatGPT"，exit 1 = "Not logged in"（实测 0.154.0）
+if (args[0] === 'login' && args[1] === 'status') {
+  if (process.env.FAKE_LOGGED_OUT) { process.stdout.write('Not logged in\n'); process.exit(1); }
+  process.stdout.write('Logged in using ChatGPT\n');
+  process.exit(0);
+}
+// codex 的续跑是 `exec resume <ID>`：子命令 + 位置参数，不是 --resume flag
+const ri = args.indexOf('resume');
+const resume = ri >= 0 && args[ri + 1] && !args[ri + 1].startsWith('-') ? args[ri + 1] : null;
+// 真 codex 的 `exec resume` 参数集比 `exec` 窄：不认 -s，末尾的 `-` 会被当成 PROMPT 位置参数
+// 从而把后面的 flag 挤错位。这里照样拒绝，否则 hh 的 send（返修）能在假 codex 上跑通、在真 codex 上炸。
+if (resume) {
+  const bad = args.includes('-s') ? '-s' : args[args.length - 1] === '-' ? '-' : null;
+  if (bad) {
+    process.stderr.write(`tip: to pass '${bad}' as a value, use '-- ${bad}'\nUsage: codex exec resume [OPTIONS] [SESSION_ID] [PROMPT]\n`);
+    process.exit(2);
+  }
+}
+const thread = resume || `0199fake-${Date.now().toString(36)}`;
+// 网关是 -c model_providers.hh.base_url=… 这样传进来的
+const cfgVal = (k) => {
+  for (let i = 0; i < args.length; i++) if (args[i] === '-c' && String(args[i + 1] || '').startsWith(`${k}=`)) return args[i + 1].slice(k.length + 1);
+  return null;
+};
+let task = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (c) => { task += c; });
+process.stdin.on('end', async () => {
+  const emit = (o) => process.stdout.write(`${JSON.stringify(o)}\n`);
+  let n = 0;
+  const item = (it) => ({ id: `item_${n++}`, ...it });
+  emit({ type: 'thread.started', thread_id: thread });
+  // 真 codex 启动时会发一串不致命的 item.error（hook 跳过、skill 描述截断），后面照样 turn.completed。
+  // hh 必须把它们当噪音展示、而不是判失败——留在这里正是为了钉住这个行为。
+  emit({ type: 'item.completed', item: item({ type: 'error', message: 'skipping async hook in ~/.codex/plugins/…: async hooks are not supported yet' }) });
+  emit({ type: 'turn.started' });
+  const sleep = Number(process.env.FAKE_SLEEP || 0);
+  if (sleep) await new Promise((r) => setTimeout(r, sleep * 1000));
+  const firstLine = (task.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('-')) || '').trim();
+  let final;
+  if (/envcheck/.test(task)) final = `env=${cfgVal('model_providers.hh.base_url') || '-'}/${get('-m') || '-'}/${process.env.HH_CODEX_KEY || '-'}/${process.env.FOO || '-'}`;
+  else if (/pong/i.test(task)) final = 'pong';
+  else if (/report/.test(task)) final = 'done: wrote a.txt\n\n```json\n{"status":"done","summary":"fake codex report","changed":["a.txt"],"commits":[],"verified":[{"cmd":"true","ok":true}],"assumptions":[],"blockers":[]}\n```';
+  else final = `${resume ? `resumed ${resume}; ` : ''}done: ${firstLine.slice(0, 60)}`;
+  emit({ type: 'item.started', item: { id: 'item_9', type: 'command_execution', command: "/bin/bash -lc 'ls'", aggregated_output: '', exit_code: null, status: 'in_progress' } });
+  emit({ type: 'item.completed', item: { id: 'item_9', type: 'command_execution', command: "/bin/bash -lc 'ls'", aggregated_output: 'a.txt\n', exit_code: 0, status: 'completed' } });
+  emit({ type: 'item.completed', item: item({ type: 'agent_message', text: final }) });
+  if (process.env.FAKE_FAIL) {
+    emit({ type: 'turn.failed', error: { message: 'stream disconnected before completion: error sending request' } });
+    process.exit(1);
+  }
+  emit({ type: 'turn.completed', usage: { input_tokens: 100, cached_input_tokens: 10, output_tokens: 5, reasoning_output_tokens: 0 } });
+  process.exit(0);
+});

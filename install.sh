@@ -52,8 +52,10 @@ if [ "${HH_DEV:-0}" = 1 ]; then
 else
   say "安装到 $SHARE_DIR"
   mkdir -p "$SHARE_DIR"
-  rm -rf "${SHARE_DIR:?}/bin" "${SHARE_DIR:?}/lib" "${SHARE_DIR:?}/prompts" "${SHARE_DIR:?}/skill"
+  rm -rf "${SHARE_DIR:?}/bin" "${SHARE_DIR:?}/lib" "${SHARE_DIR:?}/prompts" "${SHARE_DIR:?}/skill" "${SHARE_DIR:?}/mod"
   cp -R "$here/bin" "$here/lib" "$here/prompts" "$here/skill" "$SHARE_DIR/"
+  # mod 可能不存在（只影响 /hh-config，下面会提示）；set -e 下不能无条件 cp，否则整个安装在这里中断、连 hh 都没装上
+  [ -d "$here/mod" ] && cp -R "$here/mod" "$SHARE_DIR/"
   cp "$here/package.json" "$SHARE_DIR/package.json"
   target="$SHARE_DIR/bin/hh"
 fi
@@ -65,6 +67,21 @@ case ":$PATH:" in *":$BIN_DIR:"*) ;; *) warn "$BIN_DIR 不在 PATH，请加到 s
 
 say "安装 Leader 技能"
 d="$HOME/.claude/skills/herdr-leader"; mkdir -p "$d"; install -m 644 "$here/skill/herdr-leader/SKILL.md" "$d/SKILL.md"; echo "  $d/SKILL.md"
+
+say "安装配置界面（mod）"
+# 不用往 ~/.claude 里装：hh claude 起 Leader 时会用 --plugin-dir 把它挂进去，
+# 卸载 hh 就一起没了，也不会污染用户自己的插件目录。这里只确认文件到位。
+mod_src="$(dirname "$target")/../mod"
+if [ -f "$mod_src/.claude-plugin/plugin.json" ] && [ -f "$mod_src/hooks/hooks.json" ]; then
+  echo "  $(cd "$mod_src" && pwd)  → Leader 里用 /hh-config 打开"
+  if ! grep -q '"CLAUDE_CODE_ENABLE_FUNCTION_HOOKS"' "$HOME/.claude/settings.json" 2>/dev/null; then
+    warn "Claude Code 的 function hooks 还没开，/hh-config 不会出现。"
+    echo "       在 ~/.claude/settings.json 的 env 里加：\"CLAUDE_CODE_ENABLE_FUNCTION_HOOKS\": \"1\""
+    echo "       （这是 early access 接口；不开也不影响 hh 的其它功能）"
+  fi
+else
+  warn "没找到 mod/，/hh-config 不可用（不影响其它功能）"
+fi
 
 say "初始化配置"
 if [ -f "$CFG" ]; then
@@ -88,6 +105,7 @@ cat <<NEXT
      还没有端点？hh setup 一问一答加一个（订阅 / API key / 网关 + 模型），顺手测连通
   2) hh roles set coder --profile <便宜的>  ·  hh leader <最聪明的>   分工；hh doctor --net 对角色用到的 profile 各发一次 pong（--all 全部）
   3) hh claude                     启动 Leader，直接说需求（hh claude herdr 把 Leader 也开进 herdr；--no-herdr 连 worker 都不开窗口）
+     Leader 里敲 /hh-config 可视化改端点 / profile / 角色
   4) hh install-mcp                （可选）把 hh 注册成 Claude Code 的原生 MCP 工具
   5) eval "\$(hh profiles aliases)"  （可选）生成 <profile>cc 快捷命令，写进 ~/.shell_aliases
 NEXT

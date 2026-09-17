@@ -67,7 +67,7 @@
         <li>组织 review · 返修</li>
         <li>中文汇报：结论 + 证据</li>
       </ol>
-      <div class="foot">协议注入 system prompt · MCP 工具 hh_*</div>
+      <div class="foot">协议注入 system prompt · MCP 工具 hh_* · /hh-config 面板</div>
     </div>
     <div class="arrow"></div>
 
@@ -76,7 +76,7 @@
       <div class="lead">Node ≥ 18 · 零依赖 · 给 Agent 的是 JSON</div>
       <ul class="files">
         <li>task.md <span>任务全文（含角色规范）</span></li>
-        <li>events.jsonl <span>claude -p 原始事件</span></li>
+        <li>events.jsonl <span>agent 原始事件流</span></li>
         <li>output.log <span>人可读 transcript</span></li>
         <li>result.json <span>status · report</span></li>
       </ul>
@@ -85,11 +85,11 @@
     <div class="arrow"></div>
 
     <div class="workers">
-      <div class="row"><div class="role">coder</div><div class="desc">实现边界内的改动，跑验收，按文件提交<span>fast @ relay · vendor/coding-fast</span></div><span class="chip">full</span></div>
+      <div class="row"><div class="role">coder</div><div class="desc">实现边界内的改动，跑验收，按文件提交<span>codex · vendor/gpt-x</span></div><span class="chip">full</span></div>
       <div class="row"><div class="role">executor</div><div class="desc">跑脚本、批处理、环境操作，不改源码<span>fast @ relay</span></div><span class="chip">full</span></div>
       <div class="row"><div class="role">reviewer</div><div class="desc">只读审 diff，输出分级问题表<span>official · claude 自己的登录</span></div><span class="chip">readonly</span></div>
       <div class="row"><div class="role">researcher</div><div class="desc">只读调研与方案对比，证据带行号<span>gemini @ gemini-gw · 大上下文</span></div><span class="chip">readonly</span></div>
-      <div class="cap">每个 run 一个 claude -p 无头进程：独立会话、独立工作目录。角色是数据，名字任意，按描述选人。</div>
+      <div class="cap">每个 run 一个无头进程（<b>claude -p</b> 或 <b>codex exec</b>）：独立会话、独立工作目录。角色是数据，名字任意，按描述选人。</div>
     </div>
   </div>
 

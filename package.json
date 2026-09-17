@@ -6,9 +6,9 @@
   "repository": "github:wangfan1998-github/herdr-hybrid",
   "bin": { "hh": "bin/hh" },
   "engines": { "node": ">=18" },
-  "files": ["bin", "lib", "prompts", "skill", "install.sh", "README.md", "docs"],
+  "files": ["bin", "lib", "prompts", "skill", "mod", "install.sh", "README.md", "docs"],
   "scripts": {
-    "check": "for f in bin/hh lib/*.js tests/fake-agent tests/fake-herdr; do node --check \"$f\" || exit 1; done",
-    "test": "bash tests/smoke.sh"
+    "check": "for f in bin/hh lib/*.js lib/agents/*.js lib/protocols/*.js tests/fake-agent tests/fake-codex tests/fake-herdr; do node --check \"$f\" || exit 1; done",
+    "test": "bash tests/smoke.sh && node --test tests/*.test.js"
   }
 }
