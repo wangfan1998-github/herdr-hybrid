@@ -264,6 +264,8 @@ out="$(hh profiles import-aliases --dry-run "$T/aliases")"; has "$out" '"dry_run
 out="$(hh doctor --json || true)"; has "$out" '"checks"' && has "$out" '"gateway.gwh"' && pass "doctor --json" || fail "doctor: $out"
 out="$(hh log -n 200)"; has "$out" '"dispatch"' && has "$out" '"cancel"' && pass "log 事件流" || fail "log: $out"
 out="$(hh status --all)"; has "$out" "\"$id\"" && has "$out" "\"$id4\"" && pass "status --all" || fail "status all: $out"
+hh profiles test fake >/dev/null 2>&1 || true
+! has "$(hh status)" 'probe-fake' && has "$(hh status --all)" 'probe-fake' && pass "连通性探测不进默认 status（--all 才有）" || fail "probe hidden"
 
 # ---- MCP ----
 req='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"0"}}}
