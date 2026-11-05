@@ -100,7 +100,7 @@ out="$(hh env cxoff --json)"; ! has "$out" '"OPENAI_API_KEY"' && has "$out" '"HH
 # fake-agent 收到 `auth status` 输出 loggedIn JSON；fake-codex 收到 `login status` 用退出码表示（FAKE_LOGGED_OUT=1 模拟未登录）
 out="$(hh doctor --plain 2>&1 || true)"
 has "$out" '✓ claude.auth' && pass "doctor 体检用到的 claude 订阅 profile 的登录" || fail "doctor claude.auth: $out"
-out="$(FAKE_AUTH_VIA_ENV=1 ANTHROPIC_AUTH_TOKEN=agk-leader hh doctor --plain 2>&1 || true)"; has "$out" '✗ claude.auth' && pass "doctor 按 worker 的 env 体检（会话里的网关密钥不算 official 已登录）" || fail "doctor env-aware auth: $out"
+out="$(FAKE_AUTH_VIA_ENV=1 ANTHROPIC_AUTH_TOKEN=fake-session-token hh doctor --plain 2>&1 || true)"; has "$out" '✗ claude.auth' && pass "doctor 按 worker 的 env 体检（会话里的网关密钥不算 official 已登录）" || fail "doctor env-aware auth: $out"
 out="$(FAKE_LOGGED_OUT=1 hh doctor --plain 2>&1 || true)"; has "$out" '✗ claude.auth' && has "$out" 'claude /login' && pass "claude 未登录 → ✗ 并提示 /login" || fail "doctor logged out: $out"
 FAKE_LOGGED_OUT=1 hh doctor >/dev/null 2>&1 && fail "未登录应退出非 0" || pass "未登录 doctor 退出码非 0"
 # 改个名的订阅 profile（不叫 official）也要被检到——旧实现按名字匹配会漏
