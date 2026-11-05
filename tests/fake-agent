@@ -8,7 +8,8 @@ const get = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : nu
 // doctor 的登录体检会调 `claude auth status`（真 claude 输出 JSON）。
 // FAKE_LOGGED_OUT=1 模拟未登录，用来测 doctor 报 ✗。
 if (args[0] === 'auth' && args[1] === 'status') {
-  const loggedIn = !process.env.FAKE_LOGGED_OUT;
+  // FAKE_AUTH_VIA_ENV=1：只有带着 ANTHROPIC_AUTH_TOKEN 才算登录（模拟「没登录，靠会话里的网关变量」）
+  const loggedIn = process.env.FAKE_AUTH_VIA_ENV ? !!process.env.ANTHROPIC_AUTH_TOKEN : !process.env.FAKE_LOGGED_OUT;
   process.stdout.write(`${JSON.stringify({ loggedIn, authMethod: 'oauth_token', apiProvider: 'firstParty' })}\n`);
   process.exit(0);
 }
