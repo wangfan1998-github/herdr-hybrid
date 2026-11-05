@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 // 测试用假 claude：模仿 Claude Code 的无头 stream-json 输出（system/init → assistant → result），接受 claude -p 的参数（只认 --resume）。
-// 任务从 stdin 读。环境: FAKE_SLEEP=秒 (拖时间，测 cancel)  FAKE_FAIL=1 (退出码 1 + is_error)
+// 任务从 stdin 读。任务含 askq → blocked + 阻塞问题；verifyfail → 验收失败 + 非阻塞问题。环境: FAKE_SLEEP=秒 (拖时间，测 cancel / 超时 / 卡住)  FAKE_FAIL=1 (退出码 1 + is_error)
 // 任务里含 "envcheck" 时，回复里带上 ANTHROPIC_BASE_URL / ANTHROPIC_MODEL / ANTHROPIC_AUTH_TOKEN 的取值，用来验证 profile env 注入。
 const args = process.argv.slice(2);
 const get = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; };
@@ -21,12 +21,15 @@ process.stdin.on('end', async () => {
   const emit = (o) => process.stdout.write(`${JSON.stringify(o)}\n`);
   emit({ type: 'system', subtype: 'init', session_id: session, model: get('--model') || 'fake-1', permissionMode: get('--permission-mode') || '?', cwd: process.cwd() });
   emit({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'task.md' } }] } });
+  if (process.env.FAKE_GRANDCHILD) require('child_process').spawn('sleep', [process.env.FAKE_GRANDCHILD], { stdio: 'inherit' }); // 攥着管道的孙进程
   const sleep = Number(process.env.FAKE_SLEEP || 0);
   if (sleep) await new Promise((r) => setTimeout(r, sleep * 1000));
   const firstLine = (task.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('-')) || '').trim();
   let final;
   if (/envcheck/.test(task)) final = `env=${process.env.ANTHROPIC_BASE_URL || '-'}/${process.env.ANTHROPIC_MODEL || '-'}/${process.env.ANTHROPIC_AUTH_TOKEN || '-'}/${process.env.FOO || '-'}`;
   else if (/pong/i.test(task)) final = 'pong';
+  else if (/askq/.test(task)) final = 'stuck\n\n```json\n{"status":"blocked","summary":"need a decision","changed":[],"commits":[],"verified":[],"assumptions":[],"blockers":["which db"],"questions":[{"q":"sqlite or postgres?","options":["sqlite","postgres"],"pick":"sqlite","blocking":true}]}\n```';
+  else if (/verifyfail/.test(task)) final = 'done\n\n```json\n{"status":"done","summary":"x","changed":[],"commits":[],"verified":[{"cmd":"npm test","ok":false}],"assumptions":[],"blockers":[],"questions":[{"q":"naming","options":[],"pick":"foo","blocking":false}]}\n```';
   else if (/report/.test(task)) final = 'done: wrote a.txt\n\n```json\n{"status":"done","summary":"fake report","changed":["a.txt"],"commits":[],"verified":[{"cmd":"true","ok":true}],"assumptions":[],"blockers":[]}\n```';
   else final = `${resume ? `resumed ${resume}; ` : ''}done: ${firstLine.slice(0, 60)}`;
   emit({ type: 'assistant', message: { content: [{ type: 'text', text: final }] } });

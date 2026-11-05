@@ -40,7 +40,9 @@
 
 **`done` 但什么都没改**：看 `hh result` 的 final 和 `hh read`。常见原因：任务没写清目录/文件；`autonomy` 是 `readonly`（reviewer / researcher 默认如此）却要它改代码。
 
-**worker 停在提问上**：无头模式下没有人回答，所以模板里写了「不要提问」；如果它还是问了，`hh send <id> -t "选方案 X，直接全量实现并提交，不要再停下确认"`。
+**worker 停在提问上**：无头模式下没有人实时回答。worker 会把问题写进报告的 `questions`（`blocking=true` 时 `status` 是 `blocked`），`hh wait` 的 `attention` 会标出来；回答用 `hh send <id> -t "选方案 X，直接全量实现并提交" --decision "问题 → X：依据"`，同一会话接着干。
+
+**`failed`，`error` 是 `timeout:` / `stalled:`**：hh 按 `limits` 结束了它（默认总时长 120 分钟，连续 45 分钟没输出算卡住）。`hh read` 看停在哪一步；任务本来就长就 `hh dispatch --timeout 240` 或改 `config.limits`，卡在某个命令上就把任务拆小或在任务里写清超时。
 
 **worker 走错了网关**：`hh dispatch --dry-run -r <role>` 看最终 env。网关地址、密钥、模型这 8 个变量按 profile 重算：有网关就覆盖，是 `official` 就清掉，Leader 自己的不会漏过去（其它 `ANTHROPIC_*` 照常继承）。
 

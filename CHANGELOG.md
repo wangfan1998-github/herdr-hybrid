@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### 2026-11-05 Leader 自主：小问题自己定，核心问题才找用户
+- **问题分级写进 Leader 协议。** 原来是「派出去之后不再提问」，现在是：实现细节、可回退、范围内的取舍由 Leader 自己判断，`hh send` 回给 worker 接着干；只有整体架构 / 整体走向 / 不可逆且影响大的问题才上报用户，集中一次问、每条带推荐。
+- **worker 报告加 `questions[{q,options,pick,blocking}]`。** 不阻塞的按推荐做完、请 Leader 复核；阻塞的停下并设 `status: blocked`。没改过的旧版默认页脚自动升级；角色模板同步。
+- **`attention`：** `hh wait` / `hh status` / `hh result` 直接标出需要处理的 run（blocked / partial / 有问题 / 没交报告 / 验收失败 / failed / crashed），报告干净的不在里面。
+- **决定留痕：** `hh send --decision`、`hh decide [--escalated]`、`hh decisions`（MCP `hh_decide` / `hh_decisions`），存到 `$HH_STATE_DIR/decisions.jsonl`，方便事后抽查。
+- **worker 时限：** `config.limits.timeoutMin`（默认 120）/ `stallMin`（默认 45 分钟无输出算卡住，单调时钟计时、合盖睡眠不算），`hh dispatch --timeout MIN` 单次覆盖；到点连同 agent 的子进程一起结束，记为 `failed`；返修沿用原任务的时限，`error` 以 `timeout:` / `stalled:` 开头。
+- **修：pid 复用导致 run 永远 running。** 判活时用 `ps` 核对命令行是 `hh _worker <id>`。
+- **修：多轮返修标签撞号**（a-r1 再返修也叫 a-r1），现在沿返修链递增。
+- Claude `readonly` 放行 grep / ls / cat / head / tail / wc / git blame / git ls-files（之前只能跑 4 条 git 命令）；有执行程序参数的 rg / git grep / find 故意不放行。
+- 判活误判的兜底：`ps` 不可用（BusyBox）时退回只看 pid；被误判成 `crashed` 的 run，worker 真跑完后用真结果覆盖。
+- 决定记录落盘前把网关密钥和形如 `sk-…` 的串打码，文件 0600。
+- 性能：已结束的 run 查状态不再加锁；`hh read` / `hh log` 从文件尾部读；settled 超过 `keepDays`（默认 30）的 run 每天自动清理一次。
+
 ### 2026-09-17 双模式与完整联调
 - 自主实现 external / native 编排、三协议路由、默认 worker、额外模型、委派提示、有限回退及上下文压缩，无外部 OpenCodex 运行依赖。
 - 修复真实 CLI 参数、Claude 模型后缀、Codex grammar 工具转换、并行工具结果和 Responses 续接来源；密钥保留在父进程。

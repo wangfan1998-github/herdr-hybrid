@@ -340,7 +340,7 @@ hh pane [right|bottom]            /hh-config 面板贴右边（默认）还是�
 hh env <profile> [--reveal]       看将注入的环境变量
 hh dispatch -r ROLE [-p PROFILE] [-m MODEL] [-a full|workspace|readonly] [-l LABEL] [-d CWD] (-f FILE | -t "TASK")
 hh wait ID... [--timeout 540]  ·  hh status [--all]  ·  hh read ID [-n 60]  ·  hh result ID  ·  hh task ID
-hh send ID (-t "TEXT" | -f FILE)  ·  hh cancel ID  ·  hh close ID  ·  hh view ID  ·  hh log  ·  hh clean
+hh send ID (-t "TEXT" | -f FILE) [--decision "…"]  ·  hh decisions  ·  hh cancel ID  ·  hh close ID  ·  hh view ID  ·  hh log  ·  hh clean
 hh gateways [set NAME --url U --auth token|apikey --secret S | rm NAME]
 hh profiles [show|set|rm|test NAME | aliases | import-aliases]
 hh roles [set ROLE --profile P [--autonomy A] [--desc "…"] | rm ROLE]  ·  hh leader [PROFILE]

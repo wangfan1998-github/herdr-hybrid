@@ -92,7 +92,7 @@ claude -p --output-format stream-json --verbose <autonomy 参数> [--model M] [-
 | --- | --- |
 | `full` | `--permission-mode bypassPermissions` |
 | `workspace` | `--permission-mode acceptEdits` |
-| `readonly` | `--permission-mode default --allowedTools "Bash(git diff:*)" "Bash(git log:*)" "Bash(git show:*)" "Bash(git status:*)"` |
+| `readonly` | `--permission-mode default --allowedTools "Bash(git diff:*)" … "Bash(wc:*)"`：放行 git diff/log/show/status/blame/ls-files 和 grep / ls / cat / head / tail / wc。前缀规则会跳过 Claude Code 自己的参数检查，所以有「执行程序」参数的命令都不列（`rg --pre`、`git grep -O`、`find -exec`）；测试 / 构建可能有副作用，也不放行，由 Leader 复跑。已知缺口：`git diff/log/show --output=FILE` 能写文件 |
 
 **`agent: codex`**（任务正文同样走 stdin，末尾 `-` 是明示从 stdin 读）
 
@@ -129,14 +129,19 @@ worker 拿到：stdin = 完整 `task.md`（角色规范 + 任务 + 完成要求�
 ```json
 { "status": "done", "exit_code": 0, "signal": null, "final": "…最终回复全文…",
   "report": { "status": "done", "summary": "已实现 /export 接口", "changed": ["be/export.go"], "commits": ["3f2a9c1"],
-              "verified": [{ "cmd": "go test ./...", "ok": true }], "assumptions": [], "blockers": [] },
+              "verified": [{ "cmd": "go test ./...", "ok": true }], "assumptions": [], "blockers": [],
+              "questions": [{ "q": "导出文件名要不要带时区", "options": ["UTC", "本地时区"], "pick": "UTC", "blocking": false }] },
   "session_id": "…", "usage": { "cost_usd": 0.02, "turns": 5, "duration_ms": 261000 },
   "error": null, "started": "…", "ended": "…", "duration_ms": 261340 }
 ```
 
 `report` 来自 worker 回复末尾的最后一个 ```json 块（任务页脚 `config.footer` 要求它这么交）。解析失败或没有就是 `null`——Leader 把这当成「没做完」的信号去看 `hh read`。`status` 是进程层面的，`report.status` 是 worker 自述的完成度，两者都要看，最终以 Leader 自己的验收为准。
 
-`status` 判定：退出码 0 且 `result` 事件没有 `is_error` → `done`；否则 `failed`；被 `hh cancel` → `cancelled`；进程消失且没写结果 → `crashed`。
+`status` 判定：退出码 0 且 `result` 事件没有 `is_error` → `done`；否则 `failed`；超过 `limits` 被 hh 结束 → `failed`（`error` 以 `timeout:` / `stalled:` 开头）；被 `hh cancel` → `cancelled`；进程消失且没写结果 → `crashed`。判断 worker 还活着时会用 `ps` 核对命令行是不是 `hh _worker <id>`，所以强杀或重启后 pid 被别的进程复用也会正确判成 `crashed`。
+
+`questions` 是 worker 拿不准的决定：`blocking=false` 表示它已经按 `pick` 做完、请 Leader 复核；`blocking=true` 表示它停在这一步等回答（此时 `report.status` 是 `blocked`）。Leader 用 `hh send <id> -t "答复" --decision "问题 → 结论：依据"` 回答并留痕，同一会话接着干；`hh decisions` 能看到 Leader 替你做过的所有决定和上报过的问题。
+
+每个已结束的 run 带 `attention`（`hh status` / `hh wait` / `hh result`），列出需要 Leader 处理的原因：`failed` `crashed` `cancelled` `no_report` `partial` `blocked` `blocking_question` `question` `verify_failed`；空数组 = 报告干净。`hh wait` 的顶层 `attention` 是同一份信息的汇总。
 
 ### 返修：`hh send`
 

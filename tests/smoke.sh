@@ -27,6 +27,11 @@ out="$(hh init --json)"; has "$out" '"config"' && pass "hh init" || fail "init: 
 mode(){ node -e 'console.log((require("fs").statSync(process.argv[1]).mode & 0o777).toString(8))' "$1"; }   # 跨 BSD/GNU 的权限读取
 [ "$(mode "$HH_CONFIG_DIR/config.json")" = "600" ] && pass "config.json 600" || fail "perm: $(mode "$HH_CONFIG_DIR/config.json")"
 [ -f "$HH_CONFIG_DIR/prompts/coder.md" ] && pass "prompts 复制" || fail "prompts"
+git -C "$here" show 3940fc2:prompts/coder.md > "$HH_CONFIG_DIR/prompts/coder.md" 2>/dev/null && rm -f "$HH_CONFIG_DIR/prompts/.shipped.json" && echo "# 我自己的规范" > "$HH_CONFIG_DIR/prompts/reviewer.md"
+hh init --force --json >/dev/null   # install.sh 在已有配置时就是这么调的
+cmp -s "$HH_CONFIG_DIR/prompts/coder.md" "$here/prompts/coder.md" && pass "没改过的旧版模板随新版本升级" || fail "prompt upgrade"
+[ "$(cat "$HH_CONFIG_DIR/prompts/reviewer.md")" = "# 我自己的规范" ] && pass "用户改过的模板不覆盖" || fail "prompt keep"
+cp "$here/prompts/reviewer.md" "$HH_CONFIG_DIR/prompts/reviewer.md"
 [ "$(jget roles.coder.profile <<<"$out")" = "official" ] && [ "$(jget roles_defaulted <<<"$out")" = "true" ] && pass "init 角色默认全 official" || fail "default roles: $out"
 has "$out" '"demo"' && has "$out" '"demo2"' && pass "init 导入 shell alias（去掉 cc 后缀）" || fail "aliases: $out"
 gw="$(hh profiles show demo2 | jget profile.gateway)"; [ "$gw" = "$(hh profiles show demo | jget profile.gateway)" ] && pass "同 url+密钥的 alias 复用网关 ($gw)" || fail "alias gateway reuse"
@@ -194,11 +199,57 @@ out="$(FAKE_SLEEP=20 hh dispatch -r coder -l slow2 -d "$T" -t "sleep" --view non
 set +e; hh wait "$id5" --timeout 2 >/dev/null; rc=$?; set -e; [ $rc -eq 2 ] && pass "wait 超时退出码 2" || fail "wait rc=$rc"
 hh cancel "$id5" >/dev/null
 
+# ---- attention：wait 直接告诉 Leader 哪些 run 要处理 ----
+out="$(hh dispatch -r coder -l ask -d "$T" -t "askq" --view none)"; id_q="$(jget run.id <<<"$out")"
+out="$(hh dispatch -r coder -l vf -d "$T" -t "verifyfail" --view none)"; id_v="$(jget run.id <<<"$out")"
+out="$(hh wait "$id_q" "$id_v" "$id_r" "$id" --timeout 30)"
+att="$(jget attention <<<"$out")"
+has "$att" "\"$id_q\"" && has "$att" 'blocked' && has "$att" 'blocking_question' && pass "attention：blocked + 阻塞问题" || fail "attention q: $att"
+has "$att" "\"$id_v\"" && has "$att" 'verify_failed' && has "$att" '"question"' && pass "attention：验收失败 + 非阻塞问题" || fail "attention v: $att"
+has "$att" "\"$id\"" && has "$att" 'no_report' && pass "attention：没交报告" || fail "attention no_report: $att"
+! has "$att" "\"$id_r\"" && pass "attention：报告干净的 run 不在列表里" || fail "attention clean: $att"
+out="$(hh wait "$id_q" --timeout 5 --plain)"; has "$out" "ATTENTION $id_q" && pass "wait 人类输出带 ATTENTION 行" || fail "wait plain: $out"
+has "$(hh status)" '"attention"' && pass "status 每个 run 带 attention" || fail "status attention"
+
+# ---- 决定留痕 + 返修链编号 ----
+out="$(hh send "$id_q" -t "用 sqlite" --decision "sqlite or postgres → sqlite：单机工具，README 写了零依赖" --view none)"; id_q1="$(jget run.id <<<"$out")"
+has "$(jget run.label <<<"$out")" 'ask-r1' && has "$(jget decision.text <<<"$out")" '→ sqlite' && pass "send --decision 记录决定" || fail "send decision: $out"
+hh wait "$id_q1" --timeout 30 >/dev/null
+out="$(hh send "$id_q1" -t "再改一下" --view none)"; id_q2="$(jget run.id <<<"$out")"; [ "$(jget run.label <<<"$out")" = "ask-r2" ] && pass "多轮返修编号沿链递增（ask-r2，不撞 r1）" || fail "round label: $out"
+hh wait "$id_q2" --timeout 30 >/dev/null
+hh decide "要不要换存储层 → 上报" --run "$id_q" --escalated >/dev/null
+out="$(hh decisions)"; has "$out" '→ sqlite' && has "$out" '"escalated": true' && pass "hh decisions 列出决定与上报" || fail "decisions: $out"
+out="$(hh decide "" 2>&1 || true)"; has "$out" '需要决定内容' && pass "decide 空内容拒绝" || fail "decide empty: $out"
+
+# ---- worker 时限：总时长 / 卡住 ----
+out="$(FAKE_SLEEP=30 hh dispatch -r coder -l to -d "$T" -t "sleep" --timeout 0.03 --view none)"; id_t="$(jget run.id <<<"$out")"
+out="$(hh wait "$id_t" --timeout 20)"; [ "$(jget settled <<<"$out")" = "true" ] && out="$(hh result "$id_t")" && [ "$(jget run.status <<<"$out")" = "failed" ] && has "$(jget run.error <<<"$out")" 'timeout:' && pass "超过 --timeout → failed（timeout:）" || fail "timeout: $out"
+node -e 'const f=process.argv[1];const c=JSON.parse(require("fs").readFileSync(f));c.limits={timeoutMin:0,stallMin:0.03};require("fs").writeFileSync(f,JSON.stringify(c))' "$HH_CONFIG_DIR/config.json"
+out="$(FAKE_SLEEP=30 hh dispatch -r coder -l st -d "$T" -t "sleep" --view none)"; id_s="$(jget run.id <<<"$out")"
+out="$(hh wait "$id_s" --timeout 20)"; out="$(hh result "$id_s")"; has "$(jget run.error <<<"$out")" 'stalled:' && pass "长时间无输出 → failed（stalled:）" || fail "stall: $out"
+node -e 'const f=process.argv[1];const c=JSON.parse(require("fs").readFileSync(f));delete c.limits;require("fs").writeFileSync(f,JSON.stringify(c))' "$HH_CONFIG_DIR/config.json"
+out="$(hh dispatch -r coder -l bt -d "$T" -t x --timeout -1 2>&1 || true)"; has "$out" '≥0' && pass "--timeout 校验" || fail "bad timeout: $out"
+has "$(hh status --all)" '"timeout"' && pass "attention 带 timeout 原因" || fail "attention timeout reason"
+out="$(FAKE_GRANDCHILD=40 FAKE_SLEEP=30 hh dispatch -r coder -l gc -d "$T" -t "sleep" --timeout 0.03 --view none)"; id_g="$(jget run.id <<<"$out")"
+t0=$SECONDS; hh wait "$id_g" --timeout 25 >/dev/null || true
+[ $((SECONDS - t0)) -lt 20 ] && [ "$(hh result "$id_g" | jget run.status)" = "failed" ] && pass "超时连孙进程一起结束（不被攥着的管道卡住）" || fail "grandchild: $((SECONDS - t0))s $(hh result "$id_g")"
+out="$(hh send "$id_t" -t "继续" --view none)"; [ "$(jget run.id <<<"$out" | xargs -I{} cat "$HH_STATE_DIR/runs/{}/meta.json" | jget limits.timeoutMin)" = "0.03" ] && pass "返修沿用原任务的时限" || fail "followup timeout: $out"
+hh cancel "$(jget run.id <<<"$out")" >/dev/null 2>&1 || true
+out="$(hh decide "密钥是 sk-aaaa1234567890 别外传，另一个 sk-zzzzzzzzzzzzzzzzzz")"; ! has "$out" 'sk-aaaa1234567890' && ! has "$out" 'zzzzzzzzzzzzzzzzzz' && ! grep -q 'sk-aaaa1234567890' "$HH_STATE_DIR/decisions.jsonl" && pass "决定记录给密钥打码" || fail "decision mask: $out"
+[ "$(mode "$HH_STATE_DIR/decisions.jsonl")" = "600" ] && pass "decisions.jsonl 600" || fail "decisions perm"
+
+# ---- pid 被复用：活着但不是我们的 worker → crashed ----
+sleep 60 & alien=$!
+mkdir -p "$HH_STATE_DIR/runs/20200101-000001-reuse-0000"
+printf '{"id":"20200101-000001-reuse-0000","label":"reuse","profile":"fake","cwd":"%s","created":"2020-01-01T00:00:00.000Z","status":"running","worker_pid":%s}\n' "$T" "$alien" > "$HH_STATE_DIR/runs/20200101-000001-reuse-0000/meta.json"
+out="$(hh wait reuse --timeout 5)"; kill "$alien" 2>/dev/null || true
+[ "$(jget settled <<<"$out")" = "true" ] && has "$out" '"crashed"' && pass "pid 被别的进程复用 → crashed（不永远 running）" || fail "pid reuse: $out"
+
 # ---- dry-run argv ----
 out="$(hh dispatch --dry-run -p pa -d "$T" -t x)"; has "$out" '"-p"' && has "$out" 'bypassPermissions' && has "$out" '"model-a"' && has "$out" '"ANTHROPIC_AUTH_TOKEN": "sk-a***90"' && pass "dry-run argv + env 打码" || fail "dry: $out"
 out="$(hh dispatch --dry-run -r coder -p pa -d "$T" -t x)"; [ "$(jget model <<<"$out")" = "model-a" ] && pass "-r 与 -p 同时给：模型跟 -p 的 profile 走（不带角色原 profile 的 fake-model）" || fail "dry -r -p model: $out"
 out="$(hh dispatch --dry-run -r coder -p pa -m m9 -d "$T" -t x)"; [ "$(jget model <<<"$out")" = "m9" ] && pass "-r -p -m：-m 最高优先" || fail "dry -m: $out"
-out="$(hh dispatch --dry-run -p pa -a readonly -d "$T" -t x)"; has "$out" '"default"' && has "$out" 'git diff' && pass "readonly 映射" || fail "dry ro: $out"
+out="$(hh dispatch --dry-run -p pa -a readonly -d "$T" -t x)"; has "$out" '"default"' && has "$out" 'git diff' && ! has "$out" 'Bash(rg' && pass "readonly 映射（不放行能执行程序的 rg）" || fail "dry ro: $out"
 out="$(hh dispatch --dry-run -p pa -a workspace -d "$T" -t x)"; has "$out" 'acceptEdits' && pass "workspace 映射" || fail "dry ws: $out"
 
 # ---- 引用保护 / 删除 ----
@@ -208,7 +259,7 @@ out="$(hh profiles import-aliases --dry-run "$T/aliases")"; has "$out" '"dry_run
 
 # ---- doctor / log / status --all ----
 out="$(hh doctor --json || true)"; has "$out" '"checks"' && has "$out" '"gateway.gwh"' && pass "doctor --json" || fail "doctor: $out"
-out="$(hh log)"; has "$out" '"dispatch"' && has "$out" '"cancel"' && pass "log 事件流" || fail "log: $out"
+out="$(hh log -n 200)"; has "$out" '"dispatch"' && has "$out" '"cancel"' && pass "log 事件流" || fail "log: $out"
 out="$(hh status --all)"; has "$out" "\"$id\"" && has "$out" "\"$id4\"" && pass "status --all" || fail "status all: $out"
 
 # ---- MCP ----
@@ -356,4 +407,9 @@ out="$(hh claude --dry-run)"; has "$out" '"CLAUDE_CODE_NO_FLICKER": "0"' && pass
 out="$(hh claude --dry-run pa)"; has "$out" '"CLAUDE_CODE_NO_FLICKER": "1"' && pass "pane=bottom 不影响普通模式（没挂面板就不动 NO_FLICKER）" || fail "pane plain: $out"
 hh pane right >/dev/null
 out="$(hh pane bogus 2>&1 || true)"; has "$out" 'right|bottom' && pass "hh pane 校验" || fail "pane bad: $out"
+# ---- 自动清理：settled 超过 keepDays 的 run 每天清一次 ----
+[ -d "$HH_STATE_DIR/runs/20200101-000000-ghost-0000" ] || fail "ghost fixture missing"
+rm -f "$HH_STATE_DIR/last-clean"
+hh dispatch -r coder -l ac -d "$T" -t x --view none >/dev/null
+[ ! -d "$HH_STATE_DIR/runs/20200101-000000-ghost-0000" ] && [ -f "$HH_STATE_DIR/last-clean" ] && pass "自动清理过期 run" || fail "auto clean"
 echo "ALL PASS"

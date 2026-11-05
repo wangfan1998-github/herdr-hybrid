@@ -22,7 +22,7 @@ prompts/          角色模板；skill/  Leader 协议；tests/  冒烟测试与
 
 - 不引入 npm 依赖。Node 内置模块够用。
 - `lib/api.js` 里的函数返回可 JSON 序列化的对象；CLI 的人类格式化只在 `lib/cli.js`。
-- 状态只来自文件（`result.json`、`meta.json` 的 pid），不要再引入抓屏、终端标题、问「做完了吗」之类的判定。
+- 状态只来自文件（`result.json`、`meta.json` 的 pid，pid 用 `ps` 核对是不是 `hh _worker <id>`），不要再引入抓屏、终端标题、问「做完了吗」之类的判定。worker 时限由 worker 自己的 watchdog 执行（`config.limits`），不要放到 Leader 侧轮询。
 - 密钥永远不进 stdout / transcript / 事件日志 / MCP 输出；一律 `maskEnv` / `mask`。只有 `hh env --reveal` 例外。
 - 改 env 计算顺序（`config.resolveProfile`）必须同步 docs/profiles.md 和 smoke 里的 envcheck 断言。
 

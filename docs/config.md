@@ -29,7 +29,9 @@
   "leader": "smart",
   "viewer": "auto",
   "workspace": "w1",
-  "footer": "## 完成要求\n\n- 全程不要向 Leader 提问…",
+  "footer": "## 完成要求\n\n- 全程不要停下来等确认…",
+  "limits": { "timeoutMin": 120, "stallMin": 45 },
+  "keepDays": 30,
   "claude": { "bin": "claude", "interactiveArgs": ["--dangerously-skip-permissions"], "pane": "right" },
   "codex": { "bin": "codex", "interactiveArgs": [] },
   "commonEnv": { "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1", "CLAUDE_CODE_NO_FLICKER": "1", "API_TIMEOUT_MS": "3000000" },
@@ -44,7 +46,9 @@
 | `leader` | 你通常用哪个 profile 当 Leader（`hh leader <profile>` 改）；`hh doctor --net` 会顺带测它 |
 | `viewer` | worker 开不开 herdr 窗口。`auto`（默认：herdr 在跑就给 worker 各开一个 tab，否则后台）· `herdr`（总是开，且 `hh claude` 也自动开进 herdr）· `none`（从不）。Leader 单次开进 herdr 用 `hh claude herdr`；`hh viewer <v>` 改默认；单次关闭 `hh claude --no-herdr` / `hh dispatch --view none`；环境变量 `HH_VIEWER` 覆盖 |
 | `workspace` | herdr 工作区 id，默认 `w1` |
-| `footer` | 拼在每个任务文件末尾的「完成要求」，默认要求 worker 在回复末尾附一个 JSON 报告（`status / summary / changed / commits / verified / assumptions / blockers`），hh 解析进 `result.report`。改了它记得保留 json 块的要求，否则 `report` 为空 |
+| `footer` | 拼在每个任务文件末尾的「完成要求」，默认要求 worker 在回复末尾附一个 JSON 报告（`status / summary / changed / commits / verified / assumptions / blockers / questions`），hh 解析进 `result.report`。改了它记得保留 json 块的要求，否则 `report` 为空。没改过的旧版默认页脚会自动升级 |
+| `limits` | worker 时限（分钟，`0` = 不限）。`timeoutMin` 总时长，默认 120；`stallMin` 连续这么久 stdout / stderr 都没输出就判定卡住，默认 45（长构建 / 长测试本身就会几十分钟没输出，所以留得宽）。用单调时钟计时，合盖睡眠不算。超时会连 agent 拉起的子进程一起结束。到点 hh 结束 worker，run 记为 `failed`，`error` 以 `timeout:` / `stalled:` 开头。单个任务用 `hh dispatch --timeout MIN` 覆盖总时长 |
+| `keepDays` | 已结束的 run 目录保留天数，默认 30；派发时每天最多检查一次，过期的自动删除。`0` = 不自动删（手动 `hh clean --days N`） |
 | `claude.bin` | `claude` 可执行文件；profile 可单独覆盖 |
 | `codex.bin` | `codex` 可执行文件；profile 可单独覆盖。只影响 `agent: "codex"` 的 profile |
 | `claude.interactiveArgs` | `hh claude <profile>` 时追加的参数，默认跳过权限确认 |
