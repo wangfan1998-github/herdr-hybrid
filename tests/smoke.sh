@@ -20,6 +20,7 @@ cat > "$T/aliases" <<'EOF'
 alias democc="CLAUDE_CODE_NO_FLICKER=1 ANTHROPIC_BASE_URL=https://demo.example.com ANTHROPIC_AUTH_TOKEN=sk-demo1234567890 ANTHROPIC_MODEL=demo-model ENABLE_TOOL_SEARCH=false claude"
 alias demo2cc="ANTHROPIC_BASE_URL=https://demo.example.com ANTHROPIC_AUTH_TOKEN=sk-demo1234567890 ANTHROPIC_MODEL=demo-model-2 claude --foo"
 alias cc="claude --dangerously-skip-permissions"
+alias envcc='env -u ANTHROPIC_API_KEY -u CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_BASE_URL=https://envp.example.com ANTHROPIC_AUTH_TOKEN=sk-envp1234567890 claude'
 EOF
 
 out="$(hh init --json)"; has "$out" '"config"' && pass "hh init" || fail "init: $out"
@@ -33,6 +34,7 @@ cmp -s "$HH_CONFIG_DIR/prompts/coder.md" "$here/prompts/coder.md" && pass "没�
 [ "$(cat "$HH_CONFIG_DIR/prompts/reviewer.md")" = "# 我自己的规范" ] && pass "用户改过的模板不覆盖" || fail "prompt keep"
 cp "$here/prompts/reviewer.md" "$HH_CONFIG_DIR/prompts/reviewer.md"
 [ "$(jget roles.coder.profile <<<"$out")" = "official" ] && [ "$(jget roles_defaulted <<<"$out")" = "true" ] && pass "init 角色默认全 official" || fail "default roles: $out"
+has "$out" '"env"' && pass "init 导入 env -u … 开头的 alias" || fail "env alias: $out"
 has "$out" '"demo"' && has "$out" '"demo2"' && pass "init 导入 shell alias（去掉 cc 后缀）" || fail "aliases: $out"
 gw="$(hh profiles show demo2 | jget profile.gateway)"; [ "$gw" = "$(hh profiles show demo | jget profile.gateway)" ] && pass "同 url+密钥的 alias 复用网关 ($gw)" || fail "alias gateway reuse"
 hh gateways set gwa --url https://a.example.com --auth token --secret sk-aaaa1234567890 --env ENABLE_TOOL_SEARCH=false >/dev/null
