@@ -28,7 +28,10 @@ out="$(hh init --json)"; has "$out" '"config"' && pass "hh init" || fail "init: 
 mode(){ node -e 'console.log((require("fs").statSync(process.argv[1]).mode & 0o777).toString(8))' "$1"; }   # 跨 BSD/GNU 的权限读取
 [ "$(mode "$HH_CONFIG_DIR/config.json")" = "600" ] && pass "config.json 600" || fail "perm: $(mode "$HH_CONFIG_DIR/config.json")"
 [ -f "$HH_CONFIG_DIR/prompts/coder.md" ] && pass "prompts 复制" || fail "prompts"
-git -C "$here" show 3940fc2:prompts/coder.md > "$HH_CONFIG_DIR/prompts/coder.md" 2>/dev/null && rm -f "$HH_CONFIG_DIR/prompts/.shipped.json" && echo "# 我自己的规范" > "$HH_CONFIG_DIR/prompts/reviewer.md"
+# 模拟「上个版本装进来、用户没改过」：文件内容与 .shipped.json 记录的 sha 一致（不依赖 git 历史，CI 是浅克隆）
+echo "# 旧版 coder 模板" > "$HH_CONFIG_DIR/prompts/coder.md"
+node -e 'const f=process.argv[1],p=process.argv[2];const l=JSON.parse(require("fs").readFileSync(f));l["coder.md"]=require("crypto").createHash("sha256").update(require("fs").readFileSync(p)).digest("hex");require("fs").writeFileSync(f,JSON.stringify(l))' "$HH_CONFIG_DIR/prompts/.shipped.json" "$HH_CONFIG_DIR/prompts/coder.md"
+echo "# 我自己的规范" > "$HH_CONFIG_DIR/prompts/reviewer.md"
 hh init --force --json >/dev/null   # install.sh 在已有配置时就是这么调的
 cmp -s "$HH_CONFIG_DIR/prompts/coder.md" "$here/prompts/coder.md" && pass "没改过的旧版模板随新版本升级" || fail "prompt upgrade"
 [ "$(cat "$HH_CONFIG_DIR/prompts/reviewer.md")" = "# 我自己的规范" ] && pass "用户改过的模板不覆盖" || fail "prompt keep"
